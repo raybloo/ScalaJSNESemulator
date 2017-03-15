@@ -1,0 +1,60 @@
+[0m[[0mdebug[0m] [0mStarting process: node[0m
+[0m[[31merror[0m] [0mError: Could not load script: "c:\Users\trolo\AppData\Local\Temp\1489153961740-0\jquery.js"[0m
+[0m[[31merror[0m] [0m    at e (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:44:23)[0m
+[0m[[31merror[0m] [0m    at Object.check (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:88:11)[0m
+[0m[[31merror[0m] [0m    at ReadStream.<anonymous> (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:107:12)[0m
+[0m[[31merror[0m] [0m    at ReadStream.wrappedEnqueued (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:255:16)[0m
+[0m[[31merror[0m] [0m    at emitOne (events.js:96:13)[0m
+[0m[[31merror[0m] [0m    at ReadStream.emit (events.js:188:7)[0m
+[0m[[31merror[0m] [0m    at fs.js:1941:12[0m
+[0m[[31merror[0m] [0m    at FSReqWrap.oncomplete (fs.js:123:15) { Error: ENOENT: no such file or directory, open 'D:\Users\trolo\AppData\Local\Temp\1489153961740-0\jquery.js'[0m
+[0m[[31merror[0m] [0m    at Error (native)[0m
+[0m[[31merror[0m] [0m  errno: -4058,[0m
+[0m[[31merror[0m] [0m  code: 'ENOENT',[0m
+[0m[[31merror[0m] [0m  syscall: 'open',[0m
+[0m[[31merror[0m] [0m  path: 'D:\\Users\\trolo\\AppData\\Local\\Temp\\1489153961740-0\\jquery.js' }[0m
+[0m[[0mdebug[0m] [0mStarting process: node[0m
+[0m[[31merror[0m] [0mError: Could not load script: "c:\Users\trolo\AppData\Local\Temp\1489153962724-0\jquery.js"[0m
+[0m[[31merror[0m] [0m    at e (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:44:23)[0m
+[0m[[31merror[0m] [0m    at Object.check (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:88:11)[0m
+[0m[[31merror[0m] [0m    at ReadStream.<anonymous> (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:107:12)[0m
+[0m[[31merror[0m] [0m    at ReadStream.wrappedEnqueued (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:255:16)[0m
+[0m[[31merror[0m] [0m    at emitOne (events.js:96:13)[0m
+[0m[[31merror[0m] [0m    at ReadStream.emit (events.js:188:7)[0m
+[0m[[31merror[0m] [0m    at fs.js:1941:12[0m
+[0m[[31merror[0m] [0m    at FSReqWrap.oncomplete (fs.js:123:15) { Error: ENOENT: no such file or directory, open 'D:\Users\trolo\AppData\Local\Temp\1489153962724-0\jquery.js'[0m
+[0m[[31merror[0m] [0m    at Error (native)[0m
+[0m[[31merror[0m] [0m  errno: -4058,[0m
+[0m[[31merror[0m] [0m  code: 'ENOENT',[0m
+[0m[[31merror[0m] [0m  syscall: 'open',[0m
+[0m[[31merror[0m] [0m  path: 'D:\\Users\\trolo\\AppData\\Local\\Temp\\1489153962724-0\\jquery.js' }[0m
+[0m[[0mdebug[0m] [0mStarting process: node[0m
+[0m[[0mdebug[0m] [0mStarting process: node[0m
+[0m[[31merror[0m] [0mError: Could not load script: "c:\Users\trolo\AppData\Local\Temp\1489153964656-0\jquery.js"[0m
+[0m[[31merror[0m] [0m    at e (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:44:23)[0m
+[0m[[31merror[0m] [0m    at Object.check (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:88:11)[0m
+[0m[[31merror[0m] [0mError: Could not load script: "c:\Users\trolo\AppData\Local\Temp\1489153963697-0\jquery.js"[0m
+[0m[[31merror[0m] [0m    at ReadStream.<anonymous> (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:107:12)[0m
+[0m[[31merror[0m] [0m    at e (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:44:23)[0m
+[0m[[31merror[0m] [0m    at ReadStream.wrappedEnqueued (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:255:16)[0m
+[0m[[31merror[0m] [0m    at Object.check (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:88:11)[0m
+[0m[[31merror[0m] [0m    at emitOne (events.js:96:13)[0m
+[0m[[31merror[0m] [0m    at ReadStream.<anonymous> (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\living\nodes\Document-impl.js:107:12)[0m
+[0m[[31merror[0m] [0m    at ReadStream.emit (events.js:188:7)[0m
+[0m[[31merror[0m] [0m    at ReadStream.wrappedEnqueued (D:\Prog\ScalaJS\NESemul\node_modules\jsdom\lib\jsdom\browser\resource-loader.js:255:16)[0m
+[0m[[31merror[0m] [0m    at fs.js:1941:12[0m
+[0m[[31merror[0m] [0m    at emitOne (events.js:96:13)[0m
+[0m[[31merror[0m] [0m    at FSReqWrap.oncomplete (fs.js:123:15) { Error: ENOENT: no such file or directory, open 'D:\Users\trolo\AppData\Local\Temp\1489153964656-0\jquery.js'[0m
+[0m[[31merror[0m] [0m    at ReadStream.emit (events.js:188:7)[0m
+[0m[[31merror[0m] [0m    at Error (native)[0m
+[0m[[31merror[0m] [0m    at fs.js:1941:12[0m
+[0m[[31merror[0m] [0m  errno: -4058,[0m
+[0m[[31merror[0m] [0m    at FSReqWrap.oncomplete (fs.js:123:15) { Error: ENOENT: no such file or directory, open 'D:\Users\trolo\AppData\Local\Temp\1489153963697-0\jquery.js'[0m
+[0m[[31merror[0m] [0m  code: 'ENOENT',[0m
+[0m[[31merror[0m] [0m    at Error (native)[0m
+[0m[[31merror[0m] [0m  syscall: 'open',[0m
+[0m[[31merror[0m] [0m  errno: -4058,[0m
+[0m[[31merror[0m] [0m  path: 'D:\\Users\\trolo\\AppData\\Local\\Temp\\1489153964656-0\\jquery.js' }[0m
+[0m[[31merror[0m] [0m  code: 'ENOENT',[0m
+[0m[[31merror[0m] [0m  syscall: 'open',[0m
+[0m[[31merror[0m] [0m  path: 'D:\\Users\\trolo\\AppData\\Local\\Temp\\1489153963697-0\\jquery.js' }[0m

@@ -1,0 +1,16 @@
+[0m[[0minfo[0m] [0mFast optimizing D:\Prog\ScalaJS\NESemul\target\scala-2.11\nesemul-fastopt.js[0m
+[0m[[0mdebug[0m] [0mLinker: Compute reachability: 158111 us[0m
+[0m[[0mdebug[0m] [0mLinker: Assemble LinkedClasses: 153327 us[0m
+[0m[[0mdebug[0m] [0mBasic Linking: 327653 us[0m
+[0m[[0mdebug[0m] [0mInc. optimizer: Batch mode: true[0m
+[0m[[0mdebug[0m] [0mInc. optimizer: Incremental part: 97750 us[0m
+[0m[[0mdebug[0m] [0mInc. optimizer: Optimizing 787 methods.[0m
+[0m[[0mdebug[0m] [0mInc. optimizer: Optimizer part: 201465 us[0m
+[0m[[0mdebug[0m] [0mInc. optimizer: 310910 us[0m
+[0m[[0mdebug[0m] [0mRefiner: Compute reachability: 29292 us[0m
+[0m[[0mdebug[0m] [0mRefiner: Assemble LinkedClasses: 7956 us[0m
+[0m[[0mdebug[0m] [0mRefiner: 38917 us[0m
+[0m[[0mdebug[0m] [0mEmitter: Class tree cache stats: reused: 0 -- invalidated: 41[0m
+[0m[[0mdebug[0m] [0mEmitter: Method tree cache stats: resued: 0 -- invalidated: 102[0m
+[0m[[0mdebug[0m] [0mEmitter (write output): 153843 us[0m
+[0m[[0mdebug[0m] [0mGlobal IR cache stats: reused: 0 -- invalidated: 11 -- trees read: 250[0m

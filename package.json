@@ -1,0 +1,16 @@
+{
+  "name": "nesemul",
+  "version": "1.0.0",
+  "description": "a nes emulator written in scala JS",
+  "main": "index.js",
+  "dependencies": {
+    "source-map-support": "^0.4.11",
+    "jsdom": "^9.11.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
