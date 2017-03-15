@@ -91,7 +91,7 @@ class CPU(nes: NES) {
 
   //Find where the program begins
   def getResetVector(): Short = {
-    loadMemory(0xFFfc,true)
+    loadMemory(-4,true) // 0xFFFC
   }
 
   //Get all the flags into one single Byte
