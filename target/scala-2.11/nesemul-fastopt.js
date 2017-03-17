@@ -1077,6 +1077,133 @@ var $d_O = new $TypeData().initClass({
 }, (void 0), (void 0), $is_O, $isArrayOf_O);
 $c_O.prototype.$classData = $d_O;
 /** @constructor */
+function $c_LEmulator_CPU() {
+  $c_O.call(this);
+  this.nes$1 = null;
+  this.memory$1 = null;
+  this.pc$1 = 0;
+  this.sp$1 = 0;
+  this.a$1 = 0;
+  this.x$1 = 0;
+  this.y$1 = 0;
+  this.p$1 = 0;
+  this.carryFlag$1 = false;
+  this.zeroFlag$1 = false;
+  this.interruptDisable$1 = false;
+  this.decimalModeFlag$1 = false;
+  this.breakCommand$1 = false;
+  this.overflowFlag$1 = false;
+  this.negativeFlag$1 = false;
+  this.interrupt$1 = null;
+  this.ZERO$undPAGE$1 = 0;
+  this.INDEXED$undZERO$undPAGE$undX$1 = 0;
+  this.INDEXED$undZERO$undPAGE$undY$1 = 0;
+  this.ABSOLUTE$1 = 0;
+  this.INDEXED$undABSOLUTE$undX$1 = 0;
+  this.INDEXED$undABSOLUTE$undY$1 = 0;
+  this.IMPLIED$1 = 0;
+  this.ACCUMULATOR$1 = 0;
+  this.IMMEDIATE$1 = 0;
+  this.RELATIVE$1 = 0;
+  this.INDEXED$undINDIRECT$1 = 0;
+  this.INDIRECT$undINDEXED$1 = 0;
+  this.INDIRECT$1 = 0
+}
+$c_LEmulator_CPU.prototype = new $h_O();
+$c_LEmulator_CPU.prototype.constructor = $c_LEmulator_CPU;
+/** @constructor */
+function $h_LEmulator_CPU() {
+  /*<skip>*/
+}
+$h_LEmulator_CPU.prototype = $c_LEmulator_CPU.prototype;
+$c_LEmulator_CPU.prototype.init___LEmulator_NES = (function(nes) {
+  this.nes$1 = nes;
+  this.memory$1 = $newArrayObject($d_B.getArrayOf(), [65536]);
+  this.pc$1 = 0;
+  this.sp$1 = 0;
+  this.a$1 = 0;
+  this.x$1 = 0;
+  this.y$1 = 0;
+  this.p$1 = 0;
+  this.carryFlag$1 = false;
+  this.zeroFlag$1 = true;
+  this.interruptDisable$1 = true;
+  this.decimalModeFlag$1 = false;
+  this.breakCommand$1 = false;
+  this.overflowFlag$1 = false;
+  this.negativeFlag$1 = false;
+  this.interrupt$1 = null;
+  this.ZERO$undPAGE$1 = 0;
+  this.INDEXED$undZERO$undPAGE$undX$1 = 1;
+  this.INDEXED$undZERO$undPAGE$undY$1 = 2;
+  this.ABSOLUTE$1 = 3;
+  this.INDEXED$undABSOLUTE$undX$1 = 4;
+  this.INDEXED$undABSOLUTE$undY$1 = 5;
+  this.IMPLIED$1 = 6;
+  this.ACCUMULATOR$1 = 7;
+  this.IMMEDIATE$1 = 8;
+  this.RELATIVE$1 = 9;
+  this.INDEXED$undINDIRECT$1 = 10;
+  this.INDIRECT$undINDEXED$1 = 11;
+  this.INDIRECT$1 = 12;
+  return this
+});
+var $d_LEmulator_CPU = new $TypeData().initClass({
+  LEmulator_CPU: 0
+}, false, "Emulator.CPU", {
+  LEmulator_CPU: 1,
+  O: 1
+});
+$c_LEmulator_CPU.prototype.$classData = $d_LEmulator_CPU;
+/** @constructor */
+function $c_LEmulator_NES() {
+  $c_O.call(this);
+  this.cpu$1 = null;
+  this.program$1 = null
+}
+$c_LEmulator_NES.prototype = new $h_O();
+$c_LEmulator_NES.prototype.constructor = $c_LEmulator_NES;
+/** @constructor */
+function $h_LEmulator_NES() {
+  /*<skip>*/
+}
+$h_LEmulator_NES.prototype = $c_LEmulator_NES.prototype;
+$c_LEmulator_NES.prototype.init___ = (function() {
+  this.cpu$1 = new $c_LEmulator_CPU().init___LEmulator_NES(this);
+  this.program$1 = null;
+  return this
+});
+var $d_LEmulator_NES = new $TypeData().initClass({
+  LEmulator_NES: 0
+}, false, "Emulator.NES", {
+  LEmulator_NES: 1,
+  O: 1
+});
+$c_LEmulator_NES.prototype.$classData = $d_LEmulator_NES;
+/** @constructor */
+function $c_LEmulator_ROM() {
+  $c_O.call(this);
+  this.is$1 = null
+}
+$c_LEmulator_ROM.prototype = new $h_O();
+$c_LEmulator_ROM.prototype.constructor = $c_LEmulator_ROM;
+/** @constructor */
+function $h_LEmulator_ROM() {
+  /*<skip>*/
+}
+$h_LEmulator_ROM.prototype = $c_LEmulator_ROM.prototype;
+$c_LEmulator_ROM.prototype.init___ = (function() {
+  this.is$1 = null;
+  return this
+});
+var $d_LEmulator_ROM = new $TypeData().initClass({
+  LEmulator_ROM: 0
+}, false, "Emulator.ROM", {
+  LEmulator_ROM: 1,
+  O: 1
+});
+$c_LEmulator_ROM.prototype.$classData = $d_LEmulator_ROM;
+/** @constructor */
 function $c_Lorg_scalajs_jquery_package$() {
   $c_O.call(this);
   this.jQuery$1 = null
@@ -1512,6 +1639,59 @@ function $m_sr_Statics$() {
   };
   return $n_sr_Statics$
 }
+/** @constructor */
+function $c_LEmulator_Main$() {
+  $c_O.call(this);
+  this.nes$1 = null;
+  this.rom$1 = null
+}
+$c_LEmulator_Main$.prototype = new $h_O();
+$c_LEmulator_Main$.prototype.constructor = $c_LEmulator_Main$;
+/** @constructor */
+function $h_LEmulator_Main$() {
+  /*<skip>*/
+}
+$h_LEmulator_Main$.prototype = $c_LEmulator_Main$.prototype;
+$c_LEmulator_Main$.prototype.init___ = (function() {
+  $n_LEmulator_Main$ = this;
+  this.nes$1 = new $c_LEmulator_NES().init___();
+  this.rom$1 = null;
+  return this
+});
+$c_LEmulator_Main$.prototype.main__V = (function() {
+  this.rom$1 = new $c_LEmulator_ROM().init___();
+  (0, $m_Lorg_scalajs_jquery_package$().jQuery$1)((function() {
+    $m_LEmulator_Main$().setupUI__V()
+  }))
+});
+$c_LEmulator_Main$.prototype.setupUI__V = (function() {
+  (0, $m_Lorg_scalajs_jquery_package$().jQuery$1)("#click-me-button").click((function() {
+    $m_LEmulator_Main$()
+  }))
+});
+$c_LEmulator_Main$.prototype.$$js$exported$meth$main__O = (function() {
+  this.main__V()
+});
+$c_LEmulator_Main$.prototype.main = (function() {
+  return this.$$js$exported$meth$main__O()
+});
+var $d_LEmulator_Main$ = new $TypeData().initClass({
+  LEmulator_Main$: 0
+}, false, "Emulator.Main$", {
+  LEmulator_Main$: 1,
+  O: 1,
+  sjs_js_JSApp: 1
+});
+$c_LEmulator_Main$.prototype.$classData = $d_LEmulator_Main$;
+var $n_LEmulator_Main$ = (void 0);
+function $m_LEmulator_Main$() {
+  if ((!$n_LEmulator_Main$)) {
+    $n_LEmulator_Main$ = new $c_LEmulator_Main$().init___()
+  };
+  return $n_LEmulator_Main$
+}
+$e.Emulator = ($e.Emulator || {});
+$e.Emulator.Main = $m_LEmulator_Main$;
 /** @constructor */
 function $c_Ltutorial_webapp_HelloWorldApp$() {
   $c_O.call(this)

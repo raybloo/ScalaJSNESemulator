@@ -1,8 +1,5 @@
 package Emulator
 
-/**
-  * Created by trolo on 15.03.2017.
-  */
 class NES() {
   var cpu: CPU = new CPU(this)
   var program: Program = null
