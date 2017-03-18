@@ -47,7 +47,6 @@ class ROM {
     header(0) == 'N' &&
     header(1) == 'E' &&
     header(2) == 'S'
-    true
   }
 
 
