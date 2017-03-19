@@ -24,6 +24,7 @@ object Main extends JSApp {
   }
   def loadRom(): Unit = {
     rom.openRom("https://gist.githubusercontent.com/yaotest/4064031/raw/5f1c56b9780eef54334726e9aaff70f105e615a8/test.txt")
+    rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/c3.nes")
   }
 
   def addParagraph(string: String): Unit = {
