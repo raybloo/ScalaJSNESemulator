@@ -1,7 +1,7 @@
 package Emulator
 
 /** TODO : Class explanation
-  * @raybloo : is it a mappers equivalent ? If not, we may have to review architecture a bit.
+  * NB : Is a Mappers equivalent to the JNES architecture.
   */
 class Program(nes: NES) {
 
