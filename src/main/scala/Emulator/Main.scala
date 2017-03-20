@@ -1,11 +1,13 @@
 package Emulator
 
-import scala.scalajs.js.JSApp
+import scala.scalajs.js
+import js.JSApp
+import js.annotation.JSExport
+
 import org.scalajs.jquery.jQuery
 
 import java.nio.file.{Path, Paths}
 
-import scala.scalajs.js.JSApp
 
 /** TODO : Class explanation
   * 
@@ -13,6 +15,7 @@ import scala.scalajs.js.JSApp
 object Main extends JSApp {
   val nes = new NES()
   var rom: ROM = null
+
   def main(): Unit = {
     rom = new ROM()
     jQuery(setupUI _)
@@ -23,7 +26,8 @@ object Main extends JSApp {
     jQuery("#click-me-button").click(loadRom _)
   }
   def loadRom(): Unit = {
-    rom.openRom("c3.nes")
+    rom.openRom("https://gist.githubusercontent.com/yaotest/4064031/raw/5f1c56b9780eef54334726e9aaff70f105e615a8/test.txt")
+    rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/c3.nes")
   }
 
   def addParagraph(string: String): Unit = {
