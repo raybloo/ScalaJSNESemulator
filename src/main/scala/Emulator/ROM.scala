@@ -33,7 +33,7 @@ class ROM {
   var PCINSTRom: Array[Byte] = _ //unimplemented yet
 
   //mappers name
-  val mapperName: Array[String] = new Array[String](92)//("Unknown Mapper")
+  val mapperName: Array[String] = Array.fill(92)("Unknown Mapper")
 
   //names of known and supported mapper
   mapperName( 0) = "Direct Access"
