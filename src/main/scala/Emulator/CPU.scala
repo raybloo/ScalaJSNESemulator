@@ -1,5 +1,8 @@
 package Emulator
 
+/** TODO : Class explanation
+  * 
+  */
 class CPU(nes: NES) {
 
   //Memory

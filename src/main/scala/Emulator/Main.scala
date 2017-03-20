@@ -7,6 +7,9 @@ import java.nio.file.{Path, Paths}
 
 import scala.scalajs.js.JSApp
 
+/** TODO : Class explanation
+  * 
+  */
 object Main extends JSApp {
   val nes = new NES()
   var rom: ROM = null

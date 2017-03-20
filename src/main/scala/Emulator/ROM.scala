@@ -3,7 +3,9 @@ package Emulator
 import java.io.InputStream
 import java.nio.file.{Files, Path, Paths}
 
-
+/** TODO : Class explanation
+  * 
+  */
 class ROM {
   var is: InputStream = null
 
