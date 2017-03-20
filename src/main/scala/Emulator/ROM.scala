@@ -1,16 +1,19 @@
 package Emulator
 
 
+import java.nio.ByteBuffer
+
 import com.sun.net.httpserver.Authenticator.Failure
 
 import scala.language.dynamics
 import scala.scalajs.js
 import js.typedarray.ArrayBuffer
-import js.Dynamic.global
+import js.Dynamic
 import js.typedarray.TypedArrayBuffer.wrap
 import org.scalajs.jquery.{JQueryAjaxSettings, JQueryXHR, jQuery}
 import org.scalajs.dom.ext.Ajax
-import org.scalajs.dom.ext.Ajax.InputData
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /** class ROM
   *   this class represents the nes cartridge (Read Only Memory)
@@ -153,7 +156,7 @@ class ROM {
     if(isMapperSupported(num)) {
       new Mapper(num)
     } else {
-      global.console.log(s"Unsupported mapper, $num")
+      Dynamic.global.console.log(s"Unsupported mapper, $num")
       null
     }
   }
@@ -171,40 +174,31 @@ class ROM {
   /**Loads the requested rom into an array of byte, while performing some checks on the header */
   def openRom(url: String): Unit = {
 
-    //TODO try to use Ajax.get instead
-    /*
-    val data: InputData = null
-    val ajaxReq = Ajax.get(url, data, 0, Map.empty, false, "arraybuffer")
-    ajaxReq.onSuccess {
-      case xhr => wrap(xhr.)
-    }*/
-
     //ajax request to get the ROM in a byte array format
-    jQuery.ajax(
-      js.Dynamic.literal(
-        url = url,
-        success = { (data: js.Any, textStatus: String, jqXHR: JQueryXHR) =>
+    val ajaxReq = Ajax.get(url, null, 0, Map.empty, false, "arraybuffer")
+    ajaxReq.onSuccess {
+      case xhr =>
+        val byteBuffer = wrap( xhr.response.asInstanceOf[ArrayBuffer] )
+        fullRom = new Array(byteBuffer.capacity())
+        byteBuffer.get(fullRom)
+        if(checkRom) {//performs a check before validating
+          Dynamic.global.console.log(s"Successfully loaded $url")
+          trainer = getTrainer
+          prgRom = getPrgRom
+          chrRom = getChrRom
+          //TODO make tiles for the PPU
 
-          fullRom = data.toString.toCharArray.map(x => x.toByte)
-          // This is the only way I could find to convert data into a scala.Array[Byte]
+        } else {
+          Dynamic.global.console.log("File is not a valid ROM")
+          fullRom = null
+        }
+    }
+    ajaxReq.onFailure {
+      case e =>
+        Dynamic.global.console.log(s"Failed to load ROM at $url")
+        e.printStackTrace()
+    }
 
-          if(checkRom) {//performs a check before validating
-            global.console.log(s"Successfully loaded $url")
-            trainer = getTrainer
-            prgRom = getPrgRom
-            chrRom = getChrRom
-            //TODO make tile for the PPU
-
-          } else {
-            global.console.log("File is not a valid ROM")
-            fullRom = null
-          }
-        },
-        error = { (jqXHR: JQueryXHR, textStatus: String, errorThrow: String) =>
-          global.console.log(s"jqXHR=$jqXHR,text=$textStatus,err=$errorThrow")
-        },
-        `type` = "GET"
-      ).asInstanceOf[org.scalajs.jquery.JQueryAjaxSettings])
   }
 
   /**Checks if the fullROM meets the .nes header requirement */
