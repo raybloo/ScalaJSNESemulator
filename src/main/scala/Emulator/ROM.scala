@@ -8,35 +8,83 @@ import org.scalajs.jquery.{JQueryAjaxSettings, JQueryXHR, jQuery}
 
 import scala.scalajs.js.typedarray.{Int8Array,TA2AB}
 
-/** TODO : Class explanation
-  * 
+/** class ROM
+  *   this class represents the nes cartridge (Read Only Memory)
+  *   it reads a file with an ajx request, performs some check on it
+  *   and loads it into a byte array. It has functions that allow
+  *   the program to access different part of this ROM and get its mapper
+  *   It is based on the rom.js class from Ben Fisherman's javascript nes emulator
   */
 class ROM {
-  var fullRom: Array[Byte] = null;
-  var trainer: Array[Byte] = null;
-  var prgRom: Array[Byte] = null;
-  var chrRom: Array[Byte] = null;
-  var PCPRom: Array[Byte] = null;
-  var PCINSTRom: Array[Byte] = null;
+
+  //ROM parts
+  var fullRom: Array[Byte] = _
+  var trainer: Array[Byte] = _
+  var prgRom: Array[Byte] = _
+  var chrRom: Array[Byte] = _
+  var PCPRom: Array[Byte] = _ //unimplemented yet
+  var PCINSTRom: Array[Byte] = _ //unimplemented yet
+
+  //mappers name
+  val mapperName: Array[String] = new Array[String](92)("Unknown Mapper")
+
+  //names of known and supported mapper
+  mapperName( 0) = "Direct Access"
+  mapperName( 1) = "Nintendo MMC1"
+  mapperName( 2) = "UNROM"
+  mapperName( 3) = "CNROM"
+  mapperName( 4) = "Nintendo MMC3"
+  mapperName( 5) = "Nintendo MMC5"
+  mapperName( 6) = "FFE F4xxx"
+  mapperName( 7) = "AOROM"
+  mapperName( 8) = "FFE F3xxx"
+  mapperName( 9) = "Nintendo MMC2"
+  mapperName(10) = "Nintendo MMC4"
+  mapperName(11) = "Color Dreams Chip"
+  mapperName(12) = "FFE F6xxx"
+  mapperName(15) = "100-in-1 switch"
+  mapperName(16) = "Bandai chip"
+  mapperName(17) = "FFE F8xxx"
+  mapperName(18) = "Jaleco SS8806 chip"
+  mapperName(19) = "Namcot 106 chip"
+  mapperName(20) = "Famicom Disk System"
+  mapperName(21) = "Konami VRC4a"
+  mapperName(22) = "Konami VRC2a"
+  mapperName(23) = "Konami VRC2a"
+  mapperName(24) = "Konami VRC6"
+  mapperName(25) = "Konami VRC4b"
+  mapperName(32) = "Irem G-101 chip"
+  mapperName(33) = "Taito TC0190/TC0350"
+  mapperName(34) = "32kB ROM switch"
+
+  mapperName(64) = "Tengen RAMBO-1 chip"
+  mapperName(65) = "Irem H-3001 chip"
+  mapperName(66) = "GNROM switch"
+  mapperName(67) = "SunSoft3 chip"
+  mapperName(68) = "SunSoft4 chip"
+  mapperName(69) = "SunSoft5 FME-7 chip"
+  mapperName(71) = "Camerica chip"
+  mapperName(78) = "Irem 74HC161/32-based"
+  mapperName(91) = "Pirate HK-SF3 chip"
 
   //Returns the header of the rom in the form of a byte array
-  def getHeader(): Array[Byte] = {
+  def getHeader: Array[Byte] = {
     fullRom.slice(0,16)
   }
 
   //Returns the trainer, if has one, of the rom in the form of a byte array
-  def getTrainer(): Array[Byte] = {
-    if(hasTrainer()) {
+  def getTrainer: Array[Byte] = {
+    if(hasTrainer) {
       fullRom.slice(16,528)
     } else {
-      null
+      _
     }
   }
 
   //Returns the prgRom of the rom in the form of a byte array
-  def getPrgRom(): Array[Byte] = {
-    val size = getPrgRomSize()
-    if(hasTrainer()) {
+  def getPrgRom: Array[Byte] = {
+    val size = getPrgRomSize
+    if(hasTrainer) {
       fullRom.slice(528,528+(16384*size))
     } else {
       fullRom.slice(16,16+(16384*size))
@@ -44,42 +92,73 @@ class ROM {
   }
 
   //Returns the chrRom of the rom in the form of a byte array
-  def getChrRom(): Array[Byte] = {
-    var offset = 16;
-    val size = getChrRomSize()
-    if(hasTrainer()) offset += 512
-    offset += 16384*((getHeader()(4).toInt + 256) % 256)
+  def getChrRom: Array[Byte] = {
+    var offset = 16
+    val size = getChrRomSize
+    if(hasTrainer) offset += 512
+    offset += 16384*((getHeader(4).toInt + 256) % 256)
     fullRom.slice(offset,offset+(8196*size))
   }
 
   //Returns true when the rom has the 512 bytes of trainer before the prgrom
-  def hasTrainer(): Boolean = {
-    (getHeader()(6) & 4) != 0
+  def hasTrainer: Boolean = {
+    (getHeader(6) & 4) != 0
   }
 
   //Returns the size in 16KB of the prgrom
-  def getPrgRomSize(): Int = {
+  def getPrgRomSize: Int = {
     // Scala Bytes are signed, but we want it unsigned, so we ll be using the modulo operator
-    (getHeader()(4).toInt + 256) % 256 // conversion from signed to unsigned
+    (getHeader(4).toInt + 256) % 256 // conversion from signed to unsigned
   }
 
   //Returns the size in 8KB of the chrrom
-  def getChrRomSize(): Int = {
-    (getHeader()(5).toInt + 256) % 256 // conversion from signed to unsigned
+  def getChrRomSize: Int = {
+    (getHeader(5).toInt + 256) % 256 // conversion from signed to unsigned
   }
 
   //Returns the mirroring type as an int,
   // 0 being horizontal mirroring
   // 1 being vertical mirroring
   // 2 being fourscreen mirroring
-  def getMirroringType(): Int = {
-    val flagByte = getHeader()(6)
+  def getMirroringType: Int = {
+    val flagByte = getHeader(6)
     if((flagByte & 8) != 0){
       2
     } else if((flagByte & 1) != 0) {
       1
     } else {
       0
+    }
+  }
+
+  //Returns the mapper type in the form of an integer
+  def getMapperNum: Int = {
+    (getHeader(6) >> 4) | (getHeader(7) & 240) //0xF0
+  }
+
+  //Returns true if the mapper is supported
+  def isMapperSupported(num: Int): Boolean = {
+    num >= 0 && num < mapperName.length && mapperName(num) != "Unknown Mapper"
+  }
+
+  //Performs a check on the mapper number validity and return a newly created mapper of the mapper class
+  def createMapper: Mapper = {
+    val num = getMapperNum
+    if(isMapperSupported(num)) {
+      new Mapper(num)
+    } else {
+      global.console.log(s"Unsupported mapper, $num")
+      _
+    }
+  }
+
+  //Returns the name of the mapper
+  def getMapperName: String = {
+    val num = getMapperNum
+    if(isMapperSupported(num)) {
+      mapperName(num)
+    } else {
+      "Unknown Mapper"
     }
   }
 
@@ -94,10 +173,16 @@ class ROM {
           fullRom = data.toString.toCharArray.map(x => x.toByte)
           // This is the only way I could find to convert data into a scala.Array[Byte]
 
-          if(checkRom()) {//performs a check before validating
+          if(checkRom) {//performs a check before validating
             global.console.log(s"Successfully loaded $string")
+            trainer = getTrainer
+            prgRom = getPrgRom
+            chrRom = getChrRom
+            //TODO make tile for the PPU
+
           } else {
             global.console.log("File is not a valid ROM")
+            fullRom = _
           }
         },
         error = { (jqXHR: JQueryXHR, textStatus: String, errorThrow: String) =>
@@ -108,8 +193,8 @@ class ROM {
   }
 
   //Checks if the fullROM meets the .nes header requirement
-  def checkRom(): Boolean = {
-    val header = getHeader()
+  def checkRom: Boolean = {
+    val header = getHeader
     header(0) == 'N' &&
       header(1) == 'E' &&
       header(2) == 'S' &&
