@@ -8,11 +8,13 @@ class NES() {
   private var cpu: CPU = new CPU(this)
   private var ppu: PPU = new PPU
   private var papu: PAPU = new PAPU
-  private var romData: ROM = null
+  private var rom: ROM = null
   private val ui: UI = new UI
-  private var keyboard = ???
-  private var mmap = ??? //I'll see later how to implement these 2
+  private var keyboard = ??? //I'll see later how to implement this one
+  private var mmap: Mapper = null
   private var program: Program = null
+
+  // Init. all default emulator value
   private var frameRate: Double = 60.0
   private var frameTime: Double = 1000.0/frameRate
   private var isRunning: Boolean = false
@@ -27,14 +29,41 @@ class NES() {
     reset()
   }
 
+  /** Launch the emulator */
+  def start: Unit = {
+    if(rom != null) {
+      if(!isRunning) {
+        isRunning = true
+
+      }
+    } else {
+      ui.updateStatus("Cannot start emulator: No ROM loaded")
+    }
+  }
+
   def emulateCycle: Unit = {
     cpu.emulateCycle()
   }
 
-  def reset(): Unit = {
+  /** Reset all components */
+  def reset: Unit = {
+    if(mmap != null) {
+      mmap.reset
+    }
     cpu.reset
     ppu.reset
     papu.reset
+  }
+
+
+  /** Print the number of frame displayed per second */
+  def printFps: Unit = {
+
+  }
+
+  /** Reset frame per sec. counter */
+  def resetFps: Unit = {
+
   }
 
 
