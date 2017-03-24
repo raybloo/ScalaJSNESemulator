@@ -55,7 +55,7 @@ class CPU(nes: NES) {
   val INDIRECT: Byte = 12
 
 
-  def reset(): Unit = {
+  def reset: Unit = {
     memory = new Array[Byte](0x10000)
     carryFlag = false
     zeroFlag = false
