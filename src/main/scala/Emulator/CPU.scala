@@ -68,7 +68,7 @@ class CPU(nes: NES) {
     overflowFlag = false
     negativeFlag = false
 
-    var programRom = nes.rom
+    var programRom = nes.rom.prgRom
 
     //Internal RAM
     for(i <- 0 to 0x2000) {

@@ -11,7 +11,7 @@ class NES() {
   private var cpu: CPU = new CPU(this)
   private var ppu: PPU = new PPU
   private var papu: PAPU = new PAPU
-  private var rom: ROM = null
+  var rom: ROM = null
   private val ui: UI = new UI
   private var keyboard = ??? //I'll see later how to implement this one
   private var mmap: Mapper = null
@@ -57,7 +57,7 @@ class NES() {
       if(cpu.cyclesToHalt > 8) {
         cycles = 24
         if(emulateSound) {
-          //papu should
+          //TODO implement when papu is functionnal
         }
       }
     }
