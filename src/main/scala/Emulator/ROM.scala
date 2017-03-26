@@ -3,8 +3,6 @@ package Emulator
 
 import java.nio.ByteBuffer
 
-import com.sun.net.httpserver.Authenticator.Failure
-
 import scala.language.dynamics
 import scala.scalajs.js
 import js.typedarray.ArrayBuffer
