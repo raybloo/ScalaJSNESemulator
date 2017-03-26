@@ -133,8 +133,8 @@ class CPU(nes: NES) {
     }
   }
 
-  def emulateCycle(): Unit = {
-
+  def emulateCycle(): Int = {
+    0
   }
 
 }
