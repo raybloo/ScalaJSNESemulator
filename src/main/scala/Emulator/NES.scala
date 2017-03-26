@@ -1,5 +1,8 @@
 package Emulator
 
+import scala.scalajs.js
+import js.timers.setInterval
+
 /** Class permitting to initialise, start and reset the emulator. 
   * Object instance will be called and used by almost all other classes.
   */
@@ -8,7 +11,7 @@ class NES() {
   private var cpu: CPU = new CPU(this)
   private var ppu: PPU = new PPU
   private var papu: PAPU = new PAPU
-  private var rom: ROM = null
+  var rom: ROM = null
   private val ui: UI = new UI
   private var keyboard = ??? //I'll see later how to implement this one
   private var mmap: Mapper = null
@@ -17,6 +20,7 @@ class NES() {
   // Init. all default emulator value
   private var frameRate: Double = 60.0
   private var frameTime: Double = 1000.0/frameRate
+  private var fpsInterval: Double = 500.0
   private var isRunning: Boolean = false
   private var emulateSound: Boolean = true
   private var showDisplay: Boolean = true
@@ -26,7 +30,7 @@ class NES() {
   def loadProgram(data: Int): Unit = {
     program = new Program(this)
     program.load(data)
-    reset()
+    reset
   }
 
   /** Launch the emulator */
@@ -34,15 +38,29 @@ class NES() {
     if(rom != null) {
       if(!isRunning) {
         isRunning = true
-
+        setInterval(frameTime) {frame}
+        resetFps
+        printFps
+        setInterval(fpsInterval) {printFps}
       }
     } else {
       ui.updateStatus("Cannot start emulator: No ROM loaded")
     }
   }
 
-  def emulateCycle: Unit = {
-    cpu.emulateCycle()
+  def frame: Unit = {
+    var cycles: Int = 0
+    var stop: Boolean = false
+    ppu.startFrame()
+    //cpu.emulateCycle()
+    while(!stop) {
+      if(cpu.cyclesToHalt > 8) {
+        cycles = 24
+        if(emulateSound) {
+          //TODO implement when papu is functionnal
+        }
+      }
+    }
   }
 
   /** Reset all components */

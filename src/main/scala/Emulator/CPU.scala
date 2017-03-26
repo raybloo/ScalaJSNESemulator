@@ -8,23 +8,13 @@ class CPU(nes: NES) {
   //Memory
   var memory = new Array[Byte](0x10000)
 
-  //Program Counter (16 bits)
-  var pc: Short = 0
-
-  //Stack Pointer (8 bits)
-  var sp: Byte = 0
-
-  //Accumulator (8 bits)
-  var a: Byte = 0
-
-  //Index Register X (8 bits)
-  var x: Byte = 0
-
-  //Index Register Y (8 bits)
-  var y: Byte = 0
-
-  //Processor Status (8 bits)
-  var p: Byte = 0
+  //Registers:
+  var pc: Short = 0 //Program Counter (16 bits)
+  var sp: Byte = 0 //Stack Pointer (8 bits)
+  var a: Byte = 0 //Accumulator (8 bits)
+  var x: Byte = 0 //Index Register X (8 bits)
+  var y: Byte = 0 //Index Register Y (8 bits)
+  var p: Byte = 0 //Processor Status (8 bits)
 
   //Processor Status parts, separated for convenience
   var carryFlag: Boolean = false //0th bit
@@ -32,9 +22,22 @@ class CPU(nes: NES) {
   var interruptDisable: Boolean = true //2nd bit
   var decimalModeFlag: Boolean = false //3rd bit
   var breakCommand: Boolean = false //4th bit
-  //5th bit is unused
+  var unused: Boolean= false //5th bit
   var overflowFlag: Boolean = false //6th bit
   var negativeFlag: Boolean = false //7th bit
+
+  //New Flags, some flags and the pc need to have a place to store their new values
+  var pc_new: Short = 0
+  var interruptDisable_new = false
+  var unused_new: Boolean = false
+  var breakCommand_new: Boolean = false
+
+  //Additional emulator utility variables
+  var opdata: Boolean = false
+  var cyclesToHalt: Int = 0
+  var crash: Boolean = false
+  var irqRequested: Boolean = false
+  var irqType: Int = 0
 
  //Maskable Interrupt
   var interrupt = null
@@ -65,7 +68,7 @@ class CPU(nes: NES) {
     overflowFlag = false
     negativeFlag = false
 
-    var programRom = nes.program.getPrgRom()
+    var programRom = nes.rom.prgRom
 
     //Internal RAM
     for(i <- 0 to 0x2000) {
