@@ -139,6 +139,7 @@ class NES() {
     frameCount = 0
   }
 
+  /** Set a new preferred framerate */
   def setFramerate(rate: Double): Unit = {
     frameRate = rate
     frameTime = 1000 / frameRate
