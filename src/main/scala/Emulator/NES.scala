@@ -1,7 +1,7 @@
 package Emulator
 
 import scala.scalajs.js
-import js.timers.setInterval
+import js.timers
 
 /** Class permitting to initialise, start and reset the emulator. 
   * Object instance will be called and used by almost all other classes.
@@ -20,8 +20,9 @@ class NES() {
   // Init. all default emulator value
   private var frameRate: Double = 60.0
   private var frameTime: Double = 1000.0/frameRate
-  private var fpsInterval: Double = 500.0
   private var frameCount: Int = 0
+  private var fpsInterval: Double = 500.0
+  private var fpsLastTime: Double = null
   private var isRunning: Boolean = false
   private var emulateSound: Boolean = true
   private var showDisplay: Boolean = true
@@ -39,10 +40,10 @@ class NES() {
     if(rom != null) {
       if(!isRunning) {
         isRunning = true
-        setInterval(frameTime) {frame}
+        timers.setInterval(frameTime) {frame}
         resetFps
         printFps
-        setInterval(fpsInterval) {printFps}
+        timers.setInterval(fpsInterval) {printFps}
       }
     } else {
       ui.updateStatus("Cannot start emulator: No ROM loaded")
@@ -122,13 +123,27 @@ class NES() {
 
   /** Print the number of frame displayed per second */
   def printFps: Unit = {
-
+    val now: Double = js.Date.now()
+    var s: String = "Running"
+    if (fpsLastTime != 0) {
+      s += ": "+(frameCount.asInstanceOf[Double] / ((now - fpsLastTime) / 1000.0))+" FPS"
+    }
+    ui.updateStatus(s)
+    frameCount = 0
+    fpsLastTime = now
   }
 
   /** Reset frame per sec. counter */
   def resetFps: Unit = {
-
+    fpsLastTime = 0
+    frameCount = 0
   }
 
-
+  /** Set a new preferred framerate */
+  def setFramerate(rate: Double): Unit = {
+    frameRate = rate
+    frameTime = 1000 / frameRate
+    //TODO when papu is functionnal
+    //papu.setSampleRate(sampleRate, false)
+  }
 }
