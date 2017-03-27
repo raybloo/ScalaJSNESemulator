@@ -12,11 +12,13 @@ class NES() {
   private var cpu: CPU = new CPU(this)
   private var ppu: PPU = new PPU
   private var papu: PAPU = new PAPU
-  var rom: ROM = null // rom will be used by other compenents therefore it is not private
   private val ui: UI = new UI
   private var keyboard = null //I'll see later how to implement this one
-  private var mmap: Mapper = null
   private var program: Program = null
+
+  // Init. accessible components
+  var rom: ROM = null
+  var mmap: Mapper = null
 
   // Init. all default emulator value
   private var frameRate: Double = 60.0
@@ -54,6 +56,7 @@ class NES() {
     }
   }
 
+  /** Simulates one frame of the nes*/
   def frame: Unit = {
     var cycles: Int = 0
     var stop: Boolean = false
@@ -161,7 +164,7 @@ class NES() {
 
   def reloadRom: Unit = {
     if (oldRomUrl != null) {
-      this.loadRom(oldRomUrl);
+      this.loadRom(oldRomUrl)
     }
   }
 
