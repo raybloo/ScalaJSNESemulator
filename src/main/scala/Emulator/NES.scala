@@ -2,6 +2,7 @@ package Emulator
 
 import scala.scalajs.js
 import js.timers
+import scala.scalajs.js.timers.SetIntervalHandle
 
 /** Class permitting to initialise, start and reset the emulator. 
   * Object instance will be called and used by almost all other classes.
@@ -13,7 +14,7 @@ class NES() {
   private var papu: PAPU = new PAPU
   var rom: ROM = null // rom will be used by other compenents therefore it is not private
   private val ui: UI = new UI
-  private var keyboard = ??? //I'll see later how to implement this one
+  private var keyboard = null //I'll see later how to implement this one
   private var mmap: Mapper = null
   private var program: Program = null
 
@@ -22,10 +23,13 @@ class NES() {
   private var frameTime: Double = 1000.0/frameRate
   private var frameCount: Int = 0
   private var fpsInterval: Double = 500.0
-  private var fpsLastTime: Double = null
+  private var fpsLastTime: Double = 0.0
+  private var intervalFpsDisplay: SetIntervalHandle = null
+  private var intervalFrame: SetIntervalHandle = null
   private var isRunning: Boolean = false
   private var emulateSound: Boolean = true
   private var showDisplay: Boolean = true
+  private var oldRomUrl: String = ""
 
   ui.updateStatus("Ready to load ROM")
 
@@ -40,10 +44,10 @@ class NES() {
     if(rom != null) {
       if(!isRunning) {
         isRunning = true
-        timers.setInterval(frameTime) {frame}
+        intervalFrame = timers.setInterval(frameTime) {frame}
         resetFps
         printFps
-        timers.setInterval(fpsInterval) {printFps}
+        intervalFpsDisplay = timers.setInterval(fpsInterval) {printFps}
       }
     } else {
       ui.updateStatus("Cannot start emulator: No ROM loaded")
@@ -110,6 +114,13 @@ class NES() {
     frameCount += 1
   }
 
+  /** Stop the emulator */
+  def stop: Unit = {
+    timers.clearInterval(intervalFrame)
+    timers.clearInterval(intervalFrame)
+    isRunning = false
+  }
+
   /** Reset all components */
   def reset: Unit = {
     if(mmap != null) {
@@ -118,6 +129,40 @@ class NES() {
     cpu.reset
     ppu.reset
     papu.reset
+  }
+
+  /** Loads ROM into the ppu and the cpu*/
+  def loadRom(romUrl: String): Boolean = {
+    if (isRunning) {
+      stop
+    }
+    ui.updateStatus("Loading ROM...")
+    // Load ROM file:
+    rom = new ROM
+    rom.openRom(romUrl)
+    if(rom.checkRom) {
+      reset
+      mmap = rom.createMapper
+      if (mmap == null) {
+        false
+      } else {
+        mmap.loadROM();
+        //ppu.setMirroring(rom.getMirroringType)
+        oldRomUrl = romUrl
+        ui.updateStatus("Successfully loaded. Ready to be started.")
+        true
+      }
+    }
+    else {
+      ui.updateStatus("Invalid ROM!")
+      true
+    }
+  }
+
+  def reloadRom: Unit = {
+    if (oldRomUrl != null) {
+      this.loadRom(oldRomUrl);
+    }
   }
 
 

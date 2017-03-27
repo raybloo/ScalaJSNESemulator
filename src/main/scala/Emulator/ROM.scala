@@ -201,16 +201,20 @@ class ROM {
 
   /**Checks if the fullROM meets the .nes header requirement */
   def checkRom: Boolean = {
-    val header = getHeader
-    header(0) == 'N' &&
-      header(1) == 'E' &&
-      header(2) == 'S' &&
-      header(10) == 0 &&
-      header(11) == 0 &&
-      header(12) == 0 &&
-      header(13) == 0 &&
-      header(14) == 0 &&
-      header(15) == 0
+    if(fullRom != null) {
+      val header = getHeader
+      header(0) == 'N' &&
+        header(1) == 'E' &&
+        header(2) == 'S' &&
+        header(10) == 0 &&
+        header(11) == 0 &&
+        header(12) == 0 &&
+        header(13) == 0 &&
+        header(14) == 0 &&
+        header(15) == 0
+    } else {
+      false
+    }
   }
 
 

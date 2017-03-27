@@ -7,4 +7,8 @@ class Mapper(mapper_type: Int) {
   def reset: Unit = {
 
   }
+
+  def loadROM(): Unit = {
+
+  }
 }
