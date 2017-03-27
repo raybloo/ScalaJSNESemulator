@@ -30,10 +30,10 @@ class PPU {
 	  */
 	def writeAttrib(index: Int, value: Byte): Unit = {
 		var basex: Int = (index % 8) * 4;
-        var basey : Int = scala.math.floor(index / 8) * 4;
-        var add : Byte = _
-        var tx, ty : Int = _
-		var attindex : Int = _
+        var basey : Int = (scala.math.floor(index / 8) * 4).asInstanceOf[Int];
+        var add : Byte = 0
+        var tx, ty : Int = 0
+		var attindex : Int = 0
 		
 		var sqy, sqx : Int = 0
 		for (sqy <- 1 to 2; sqx <- 1 to 2) {
