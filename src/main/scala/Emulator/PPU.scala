@@ -1,5 +1,4 @@
 package Emulator
-import math
 
 /** Picture Processing Unit class, permits to generate the images/video for the emulator.
   * Uses registers, a memory map, palettes, sprites and several tables.
