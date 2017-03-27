@@ -1,7 +1,8 @@
 package Emulator
 
-/** TODO : Class explanation
-  * 
+/** The Cpu fetches, decodes and executes instructions
+  * from de prgrom. It communicates to other parts of the
+  * nes like the ppu and the rom
   */
 class CPU(nes: NES) {
 
@@ -10,7 +11,7 @@ class CPU(nes: NES) {
 
   //Registers:
   var pc: Short = 0 //Program Counter (16 bits)
-  var sp: Byte = 0 //Stack Pointer (8 bits)
+  var sp: Short = 0 //Stack Pointer (16 bits)
   var a: Byte = 0 //Accumulator (8 bits)
   var x: Byte = 0 //Index Register X (8 bits)
   var y: Byte = 0 //Index Register Y (8 bits)
@@ -37,7 +38,13 @@ class CPU(nes: NES) {
   var cyclesToHalt: Int = 0
   var crash: Boolean = false
   var irqRequested: Boolean = false
-  var irqType: Int = 0
+  var irqType: Byte = 3
+  /* irqType are:
+    - 0 : normal
+    - 1 : nmi
+    - 2 : reset
+    - 3 : undefined
+   */
 
  //Maskable Interrupt
   var interrupt = null
@@ -58,46 +65,79 @@ class CPU(nes: NES) {
   val INDIRECT: Byte = 12
 
 
+  /** Reset memory and all cpu flags and registers */
   def reset: Unit = {
+    //memory reset
     memory = new Array[Byte](0x10000)
-    carryFlag = false
-    zeroFlag = false
-    interruptDisable = true
-    decimalModeFlag = false
-    breakCommand = false
-    overflowFlag = false
-    negativeFlag = false
-
-    var programRom = nes.rom.prgRom
 
     //Internal RAM
     for(i <- 0 to 0x2000) {
       memory(i) =  -1 //0xFF
     }
 
-    //Everything else set to 0
-    for(i <- 0x2000 to 0x8000) {
-      memory(i) =  0 //0x00
+    //Special Addresses
+    for (i <- 0 to 4) {
+      var i = p*0x800
+      memory(i+0x008) = -9//0xF7
+      memory(i+0x009) = -17//0xEF
+      memory(i+0x00A) = -33//0xDF
+      memory(i+0x00F) = -65//0xBF
     }
 
-    pc = getResetVector()
+    //Everything else set to 0
+    for(i <- 0x2001 to 0x8000) {
+      memory(i) =  0x00
+    }
 
-    sp = -3 //0xFD
-
+    // CPU Registers:
     a = 0
     x = 0
     y = 0
+    // Reset Stack pointer:
+    //sp = -3 //0xFD
+    sp = 0x01FF
+    // Reset Program counter:
+    pc = 0x7FFF
+    pc_new = 0x7FFF
+    // Reset Status register:
+    p = 0x28
+    setProcessorFlags(0x28)
 
+    // Set flags:
+    carryFlag = false
+    decimalModeFlag = false
+    interruptDisable = true
+    interruptDisable_new = true
+    overflowFlag = false
+    negativeFlag = false
+    zeroFlag = true
+    unused = true
+    unused_new = true
+    breakCommand = true
+    breakCommand_new = true
     p = getProcessorFlags()
 
+    opdata = ??? //new opData
+    cyclesToHalt = 0
+
+    // Reset crash flag:
+    crash = false
+
+    // Interrupt notification:
+    irqRequested = false
+    irqType = 3
+
+    var programRom = nes.rom.prgRom
   }
 
-  //Find where the program begins
+  /* I m not using that anymore, but I keep it somewhere just in case it was of some use
+  /** Find where the program begins */
   def getResetVector(): Short = {
     loadMemory(-4,true) // 0xFFFC
   }
+  */
 
-  //Get all the flags into one single Byte
+  /** Get all the flags into one single Byte */
   def getProcessorFlags(): Byte = {
     var flags: Byte = 32
     if(carryFlag) {
@@ -115,6 +155,9 @@ class CPU(nes: NES) {
     if(breakCommand) {
       flags = (flags + 16).toByte
     }
+    if(unused) {
+      flags = (flags + 32).toByte
+    }
     if(overflowFlag) {
       flags = (flags + 64).toByte
     }
@@ -124,14 +167,50 @@ class CPU(nes: NES) {
     flags
   }
 
-  //Load memory, with an optional double read for 2 byte
-  def loadMemory(address: Short, doubleRead: Boolean): Short = {
-    if(!doubleRead) {
-      return 0;
-    } else {
-      return 0;
+  /** Set all processor flags according to one byte */
+  def setProcessorFlags(pStatus: Byte): Unit = {
+    carryFlag = (pStatus & 1) != 0
+    zeroFlag = (pStatus & 2) != 0
+    interruptDisable = (pStatus & 4) != 0
+    decimalModeFlag = (pStatus & 8) != 0
+    breakCommand = (pStatus & 16) != 0
+    unused = (pStatus & 32) != 0
+    overflowFlag = (pStatus & 64) != 0
+    negativeFlag = (pStatus & 128) != 0
+  }
+
+  /**Load 1 byte from memory */
+  def load1Word(address: Short): Byte = {
+    if (address < 0x2000) {
+      memory(address & 0x7ff)
+    }
+    else {
+      nes.mmap.load(address)
     }
   }
+
+  /** Load 2 bytes from memory */
+  def load2Words(address: Short): Short = {
+    if (address < 0x1FFF) {
+      (memory(address & 0x7FF) | (memory((address+1) & 0x7FF) << 8)).asInstanceOf[Short]
+    }
+    else {
+      (nes.mmap.load(address) | (nes.mmap.load((address+1).asInstanceOf[Short]) << 8)).asInstanceOf[Short]
+    }
+  }
+
+  /** Write in the memory */
+  def write(address: Short, value: Byte): Unit = {
+    if(address < 0x2000) {
+      memory(address & 0x7FF) = value
+    }
+    else {
+      nes.mmap.write(address,value)
+    }
+  }
+
+
+
 
   def emulateCycle(): Int = {
     0

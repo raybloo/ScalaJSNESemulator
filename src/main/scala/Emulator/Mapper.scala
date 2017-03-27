@@ -11,4 +11,12 @@ class Mapper(mapper_type: Int) {
   def loadROM(): Unit = {
 
   }
+
+  def load(addr: Short): Byte = {
+    0
+  }
+
+  def write(address: Short, value: Byte): Unit = {
+
+  }
 }
