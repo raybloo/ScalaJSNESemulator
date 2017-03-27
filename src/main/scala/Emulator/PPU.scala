@@ -37,12 +37,12 @@ class PPU {
 		
 		var sqy, sqx : Int = 0
 		for (sqy <- 1 to 2; sqx <- 1 to 2) {
-			add = ((value>>(2*(sqy*2+sqx))).asInstanceOf[Byte])&3; // Bit operators
+			add = (((value>>(2*(sqy*2+sqx))).asInstanceOf[Byte])&3).asInstanceOf[Byte]; // Bit operators
 			for (y <- 1 to 2; x <- 1 to 2) {
 				tx = basex+sqx*2+x;
                 ty = basey+sqy*2+y;
                 attindex = ty*width+tx;
-                attrib(ty*width+tx) = (add<<2)&12;
+                attrib(ty*width+tx) = ((add<<2)&12).asInstanceOf[Byte];
 			}
 		}
 	
