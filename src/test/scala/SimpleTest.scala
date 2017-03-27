@@ -1,5 +1,5 @@
 /**
-  * Created by trolo on 27.02.2017.
+  * This test only fails when imports and testing in itself doesn't work
   */
 import Emulator.Main
 
