@@ -6,3 +6,9 @@ jdk:
   - oraclejdk8
 script:
   - sbt ++$TRAVIS_SCALA_VERSION test
+install:
+  - . $HOME/.nvm/nvm.sh
+  - nvm install stable
+  - nvm use stable
+  - npm install
+  - npm install jsdom
