@@ -43,7 +43,7 @@ class PPU {
 				tx = basex+sqx*2+x;
                 ty = basey+sqy*2+y;
                 attindex = ty*width+tx;
-                attrib[ty*width+tx] = (add<<2)&12;
+                attrib(ty*width+tx) = (add<<2)&12;
 				
 			}
 		}
