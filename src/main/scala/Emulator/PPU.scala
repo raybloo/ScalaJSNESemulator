@@ -11,9 +11,9 @@ class PPU {
 	val name : String = n
 	
 	// Initialised filled with 0's.
-	var tile = new Array[Byte](width*height)(0)
+	var tile : Array[Byte] = new Array[Byte](width*height)(0)
 	/** Controls which palette is assigned to each part of the background.  */
-	var attrib = new Array[Byte](width*height)(0)
+	var attrib : Array[Byte] = new Array[Byte](width*height)(0)
 	
 	/** Returns the searched tile. */
 	def getTileIndex(x: Int, y: Int): Byte = {
@@ -31,19 +31,18 @@ class PPU {
 	def writeAttrib(index: Int, value: Byte): Unit = {
 		var basex: Int = (index % 8) * 4;
         var basey : Int = scala.math.floor(index / 8) * 4;
-        var add : Byte = null
-        var tx, ty : Int = null
-		var attindex : Int = null
+        var add : Byte = _
+        var tx, ty : Int = _
+		var attindex : Int = _
 		
 		var sqy, sqx : Int = 0
 		for (sqy <- 1 to 2; sqx <- 1 to 2) {
-			add = (value>>(2*(sqy*2+sqx)))&3; // Bit operators
+			add = ((value>>(2*(sqy*2+sqx))).asInstanceOf[Byte])&3; // Bit operators
 			for (y <- 1 to 2; x <- 1 to 2) {
 				tx = basex+sqx*2+x;
                 ty = basey+sqy*2+y;
                 attindex = ty*width+tx;
                 attrib(ty*width+tx) = (add<<2)&12;
-				
 			}
 		}
 	
