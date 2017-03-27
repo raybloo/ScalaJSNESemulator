@@ -11,9 +11,9 @@ class PPU {
 	val name : String = n
 	
 	// Initialised filled with 0's.
-	var tile : Array[Byte] = new Array[Byte](width*height)(0)
+	var tile : Array[Byte] = new Array(width*height)(0)
 	/** Controls which palette is assigned to each part of the background.  */
-	var attrib : Array[Byte] = new Array[Byte](width*height)(0)
+	var attrib : Array[Byte] = new Array(width*height)(0)
 	
 	/** Returns the searched tile. */
 	def getTileIndex(x: Int, y: Int): Byte = {
