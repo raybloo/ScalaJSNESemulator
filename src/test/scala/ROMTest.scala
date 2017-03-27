@@ -8,7 +8,6 @@ import utest._
 import org.scalajs.jquery.jQuery
 
 object ROMTest extends TestSuite {
-  // Initialize App
   def tests = TestSuite {
     var rom = new ROM
     'OpenRomTests {
