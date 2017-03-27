@@ -1,10 +1,64 @@
 package Emulator
+import math
 
 /** Picture Processing Unit class, permits to generate the images/video for the emulator.
   * Uses registers, a memory map, palettes, sprites and several tables.
   */
 class PPU {
 
+  private class NameTable(w: Int, h: Int, n: String) {
+	val width : Int = w
+	val height : Int = h
+	val name : String = n
+	
+	// Initialised filled with 0's.
+	var tile = new Array[Byte](width*height)(0)
+	/** Controls which palette is assigned to each part of the background.  */
+	var attrib = new Array[Byte](width*height)(0)
+	
+	/** Returns the searched tile. */
+	def getTileIndex(x: Int, y: Int): Byte = {
+		return tile(y*width+x)
+	}
+	
+	/** Returns the searched attribute. */
+	def getAttrib(x: Int, y: Int): Byte = {
+		return attrib(y*width+x)
+	}
+	
+	/** Writes given value in given index in the attributes table.
+	  * Note that the for loop (and bit operations) is necessary to select only what we want to change, as each byte in the attribute table controls a palette of a 32x32 pixel.
+	  */
+	def writeAttrib(index: Int, value: Byte): Unit = {
+		var basex: Int = (index % 8) * 4;
+        var basey : Int = scala.math.floor(index / 8) * 4;
+        var add : Byte = null
+        var tx, ty : Int = null
+		var attindex : Int = null
+		
+		var sqy, sqx : Int = 0
+		for (sqy <- 1 to 2; sqx <- 1 to 2) {
+			add = (value>>(2*(sqy*2+sqx)))&3; // Bit operators
+			for (y <- 1 to 2; x <- 1 to 2) {
+				tx = basex+sqx*2+x;
+                ty = basey+sqy*2+y;
+                attindex = ty*width+tx;
+                attrib[ty*width+tx] = (add<<2)&12;
+				
+			}
+		}
+	
+		
+	}
+	
+    // TODO if necessary : To and from JSON
+  }
+  
+  private class PaletteTable {
+  }
+  
+  private class Tile {
+  }
 
   var vramMem = null
   var spriteMem = null
@@ -77,6 +131,12 @@ class PPU {
   var showSpr0Hit: Boolean = false
   var clipToTvSize: Boolean = true
 
+  // Status flags:
+  val StatusVRAMWrite: Byte =  4
+  val StatusSLSpriteCount: Byte =  5
+  val StatusSprite0Hit: Byte =  6
+  val StatusVBlank: Byte =  7
+  
   def reset: Unit = {
 
   }
