@@ -9,6 +9,7 @@ import utest._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object ROMTest extends TestSuite {
   var rom = new ROM
