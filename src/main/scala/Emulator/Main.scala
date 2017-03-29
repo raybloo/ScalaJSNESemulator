@@ -6,6 +6,9 @@ import js.annotation.JSExport
 import org.scalajs.jquery.jQuery
 import java.nio.file.{Path, Paths}
 
+import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 /** TODO : Class explanation
   * 
@@ -25,9 +28,13 @@ object Main extends JSApp {
   }
   def loadRom(): Unit = {
     rom.openRom("https://gist.githubusercontent.com/yaotest/4064031/raw/5f1c56b9780eef54334726e9aaff70f105e615a8/test.txt")
-    rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/c3.nes")
-    Dynamic.global.console.log(s"PrgRom Size is : ${rom.getPrgRomSize}")
-    Dynamic.global.console.log(s"ChrRom Size is : ${rom.getChrRomSize}")
+    rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/c3.nes").onComplete {
+      case Success(_) =>
+        Dynamic.global.console.log(s"PrgRom Size is : ${rom.getPrgRomSize}")
+        Dynamic.global.console.log(s"ChrRom Size is : ${rom.getChrRomSize}")
+      case Failure(e) => e.printStackTrace()
+    }
+
   }
 
   def addParagraph(string: String): Unit = {

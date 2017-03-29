@@ -16,20 +16,21 @@ object ROMTest extends TestSuite {
   def tests = TestSuite {
     'OpenRomTests {
       var f: Future[Any] = rom.openRom("https://gist.githubusercontent.com/yaotest/4064031/raw/5f1c56b9780eef54334726e9aaff70f105e615a8/test.txt")
-      f.onComplete {
-        case Success(x) => assert(!rom.checkRom)
-        case Failure(e) => e.printStackTrace()
-      }
+      f.ready(Duration.Inf)
+      assert(!rom.checkRom)
 
+      /*
       f = rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/c3.nes")
       f.onComplete {
         case Success(x) => assert(rom.checkRom)
         case Failure(e) => e.printStackTrace()
-      }
+      }*/
     }
     'HeaderTests {
       val f: Future[Any] = rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/c3.nes")
-      f.onComplete {
+      f.ready(Duration.Inf)
+      assert(rom.checkRom)
+      /*f.onComplete {
         case Success(x) =>
           assert(rom.checkRom)
           assert(rom.getMapperName == "Nintendo MMC5")
@@ -40,6 +41,7 @@ object ROMTest extends TestSuite {
         case Failure(e) =>
           e.printStackTrace()
       }
+      */
     }
   }
 }

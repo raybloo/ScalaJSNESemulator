@@ -175,7 +175,7 @@ class ROM {
 
     //ajax request to get the ROM in a byte array format
     val ajaxReq = Ajax.get(url, null, 0, Map.empty, false, "arraybuffer")
-    ajaxReq.onSuccess {
+    val ret: Future[Any] = ajaxReq.map {
       case xhr =>
         val byteBuffer = wrap( xhr.response.asInstanceOf[ArrayBuffer] )
         fullRom = new Array(byteBuffer.capacity())
@@ -197,7 +197,7 @@ class ROM {
         Dynamic.global.console.log(s"Failed to load ROM at $url")
         e.printStackTrace()
     }
-    ajaxReq
+    ret
 
   }
 
