@@ -1,11 +1,9 @@
 package Emulator
 
 import scala.scalajs.js
-import js.JSApp
+import js.{Dynamic, JSApp}
 import js.annotation.JSExport
-
 import org.scalajs.jquery.jQuery
-
 import java.nio.file.{Path, Paths}
 
 
@@ -28,6 +26,8 @@ object Main extends JSApp {
   def loadRom(): Unit = {
     rom.openRom("https://gist.githubusercontent.com/yaotest/4064031/raw/5f1c56b9780eef54334726e9aaff70f105e615a8/test.txt")
     rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/c3.nes")
+    Dynamic.global.console.log(s"PrgRom Size is : ${rom.getPrgRomSize}")
+    Dynamic.global.console.log(s"ChrRom Size is : ${rom.getChrRomSize}")
   }
 
   def addParagraph(string: String): Unit = {

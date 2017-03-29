@@ -6,12 +6,13 @@ import java.nio.ByteBuffer
 import scala.language.dynamics
 import scala.scalajs.js
 import js.typedarray.ArrayBuffer
-import js.Dynamic
+import js.{Dynamic, timers}
 import js.typedarray.TypedArrayBuffer.wrap
 import org.scalajs.jquery.{JQueryAjaxSettings, JQueryXHR, jQuery}
 import org.scalajs.dom.ext.Ajax
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /** class ROM
   *   this class represents the nes cartridge (Read Only Memory)
@@ -169,8 +170,8 @@ class ROM {
     }
   }
 
-  /**Loads the requested rom into an array of byte, while performing some checks on the header */
-  def openRom(url: String): Unit = {
+  /** Loads the requested rom into an array of byte, while performing some checks on the header */
+  def openRom(url: String): Future[Any] = {
 
     //ajax request to get the ROM in a byte array format
     val ajaxReq = Ajax.get(url, null, 0, Map.empty, false, "arraybuffer")
@@ -196,6 +197,7 @@ class ROM {
         Dynamic.global.console.log(s"Failed to load ROM at $url")
         e.printStackTrace()
     }
+    ajaxReq
 
   }
 
