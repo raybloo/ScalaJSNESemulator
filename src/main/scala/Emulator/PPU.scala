@@ -5,8 +5,17 @@ package Emulator
   */
 class PPU {
 
+  /** The NameTable will contain two arrays:
+    * - Tile:
+	* 			Each byte in this array controls one 8x8 pixel character cell, and each nametable has 30 rows of 32 tiles each.
+	*
+	* - Attribute (Attrib):
+	*			The attribute table is a 64-byte array at the end of each nametable that controls which palette is assigned to each part of the background. 
+	*
+	* A NES will contain 4 NameTables, arranged in a 2x2 pattern.
+    */
   private class NameTable(w: Int, h: Int, n: String) {
-	val width : Int = w
+    val width : Int = w
 	val height : Int = h
 	val name : String = n
 	
@@ -53,6 +62,54 @@ class PPU {
   }
   
   private class PaletteTable {
+    var curTable : Array[Byte] = new Array(64)
+	var emphTable : Array[Byte] = new Array(8)
+	var currentEmph : Byte = -1
+	
+	def reset(): Unit = {
+		setEmphasis(0)
+	}
+	
+	def loadNTSCPalette(): Unit = {
+		// TODO
+	}
+	
+	def loadPALPalette(): Unit = {
+		// TODO
+	}
+	
+	def makeTables(): Unit = {
+		// TODO
+	}
+	
+	def setEmphasis(emph: Byte): Unit = {
+		// TODO
+	}
+	
+	def getEntry(yiq: Int): Byte = {
+		// TODO
+	}
+	
+	def getRed(rgb: Byte): Byte = {
+		// TODO
+	}
+	
+	def getGreen(rgb: Byte): Byte = {
+		// TODO
+	}
+	
+	def getBlue(rgb: Byte): Byte = {
+		// TODO
+	}
+	
+	def getRgb(r: Byte, g: Byte, b: Byte): Byte = {
+		// TODO
+	}
+	
+	def loadDefaultPalette(): Unit = {
+		// TODO
+	}
+	
   }
   
   private class Tile {
