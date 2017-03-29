@@ -15,4 +15,3 @@ jsDependencies += RuntimeDOM
 libraryDependencies += "com.lihaoyi" %%% "utest" % "0.4.5" % "test"
 testFrameworks += new TestFramework("utest.runner.Framework")
 
-libraryDependencies += "org.scala-lang.modules" %% "scala-async" % "0.9.6"

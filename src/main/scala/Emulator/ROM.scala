@@ -12,7 +12,6 @@ import org.scalajs.jquery.{JQueryAjaxSettings, JQueryXHR, jQuery}
 import org.scalajs.dom.ext.Ajax
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
 /** class ROM
