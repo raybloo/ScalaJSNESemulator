@@ -74,12 +74,12 @@ class ROM {
   mapperName(91) = "Pirate HK-SF3 chip"
 
 
-  /**Returns the header of the rom in the form of a byte array */
+  /** Returns the header of the rom in the form of a byte array */
   def getHeader: Array[Byte] = {
     fullRom.slice(0,16)
   }
 
-  /**Returns the trainer, if has one, of the rom in the form of a byte array */
+  /** Returns the trainer, if has one, of the rom in the form of a byte array */
   def getTrainer: Array[Byte] = {
     if(hasTrainer) {
       fullRom.slice(16,528)
@@ -88,7 +88,7 @@ class ROM {
     }
   }
 
-  /**Returns the prgRom of the rom in the form of a byte array */
+  /** Returns the prgRom of the rom in the form of a byte array */
   def getPrgRom: Array[Byte] = {
     val size = getPrgRomSize
     if(hasTrainer) {
@@ -98,7 +98,7 @@ class ROM {
     }
   }
 
-  /**Returns the chrRom of the rom in the form of a byte array */
+  /** Returns the chrRom of the rom in the form of a byte array */
   def getChrRom: Array[Byte] = {
     var offset = 16
     val size = getChrRomSize
@@ -107,18 +107,18 @@ class ROM {
     fullRom.slice(offset,offset+(8196*size))
   }
 
-  /**Returns true when the rom has the 512 bytes of trainer before the prgrom */
+  /** Returns true when the rom has the 512 bytes of trainer before the prgrom */
   def hasTrainer: Boolean = {
     (getHeader(6) & 4) != 0
   }
 
-  /**Returns the size in 16KB of the prgrom */
+  /** Returns the size in 16KB of the prgrom */
   def getPrgRomSize: Int = {
     // Scala Bytes are signed, but we want it unsigned, so we ll be using the modulo operator
     (getHeader(4).toInt + 256) % 256 // conversion from signed to unsigned
   }
 
-  /**Returns the size in 8KB of the chrrom */
+  /** Returns the size in 8KB of the chrrom */
   def getChrRomSize: Int = {
     (getHeader(5).toInt + 256) % 256 // conversion from signed to unsigned
   }
@@ -139,17 +139,17 @@ class ROM {
     }
   }
 
-  /**Returns the mapper type in the form of an integer */
+  /** Returns the mapper type in the form of an integer */
   def getMapperNum: Int = {
     (getHeader(6) >> 4) | (getHeader(7) & 240) //0xF0
   }
 
-  /**Returns true if the mapper is supported */
+  /** Returns true if the mapper is supported */
   def isMapperSupported(num: Int): Boolean = {
     num >= 0 && num < mapperName.length && mapperName(num) != "Unknown Mapper"
   }
 
-  /**Performs a check on the mapper number validity and return a newly created mapper of the mapper class */
+  /** Performs a check on the mapper number validity and return a newly created mapper of the mapper class */
   def createMapper: Mapper = {
     val num = getMapperNum
     if(isMapperSupported(num)) {
@@ -160,7 +160,7 @@ class ROM {
     }
   }
 
-  /**Returns the name of the mapper */
+  /** Returns the name of the mapper */
   def getMapperName: String = {
     val num = getMapperNum
     if(isMapperSupported(num)) {
@@ -201,7 +201,7 @@ class ROM {
 
   }
 
-  /**Checks if the fullROM meets the .nes header requirement */
+  /** Checks if the fullROM meets the .nes header requirement */
   def checkRom: Boolean = {
     if(fullRom != null) {
       val header = getHeader

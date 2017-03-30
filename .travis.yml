@@ -12,3 +12,6 @@ install:
   - nvm use stable
   - npm install
   - npm install jsdom
+  
+notifications:
+  email: false
