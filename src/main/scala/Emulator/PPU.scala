@@ -39,19 +39,19 @@ class PPU {
 	  */
 	def writeAttrib(index: Int, value: Byte): Unit = {
 		var basex: Int = (index % 8) * 4;
-        var basey : Int = (scala.math.floor(index / 8) * 4).asInstanceOf[Int];
+        var basey : Int = (scala.math.floor(index / 8) * 4).asInstanceOf[Int]
         var add : Byte = 0
         var tx, ty : Int = 0
 		var attindex : Int = 0
 		
 		var sqy, sqx : Int = 0
 		for (sqy <- 1 to 2; sqx <- 1 to 2) {
-			add = (((value>>(2*(sqy*2+sqx))).asInstanceOf[Byte])&3).asInstanceOf[Byte]; // Bit operators
+			add = (((value>>(2*(sqy*2+sqx))).asInstanceOf[Byte])&3).asInstanceOf[Byte] // Bit operators
 			for (y <- 1 to 2; x <- 1 to 2) {
-				tx = basex+sqx*2+x;
-                ty = basey+sqy*2+y;
-                attindex = ty*width+tx;
-                attrib(ty*width+tx) = ((add<<2)&12).asInstanceOf[Byte];
+				tx = basex+sqx*2+x
+                ty = basey+sqy*2+y
+                attindex = ty*width+tx
+                attrib(ty*width+tx) = ((add<<2)&12).asInstanceOf[Byte]
 			}
 		}
 	
@@ -87,31 +87,101 @@ class PPU {
 	}
 	
 	def setEmphasis(emph: Byte): Unit = {
-		// TODO
+		if (emph != currentEmph) {
+			currentEmph = emph
+			var i : Int = 0
+			for (i <- 1 to 64) curTable(i) = emphTable(emph)(i)
+		}
 	}
 	
 	def getEntry(yiq: Int): Byte = {
-		// TODO
+		return curTable(yiq)
 	}
 	
 	def getRed(rgb: Byte): Byte = {
-		// TODO
+		return ((rgb>>16)&0xFF).asInstanceOf[Byte]
 	}
 	
 	def getGreen(rgb: Byte): Byte = {
-		// TODO
+		return ((rgb>>8)&0xFF).asInstanceOf[Byte]
 	}
 	
 	def getBlue(rgb: Byte): Byte = {
-		// TODO
+		return (rgb&0xFF).asInstanceOf[Byte]
 	}
 	
 	def getRgb(r: Byte, g: Byte, b: Byte): Byte = {
-		// TODO
+		return ((r<<16)|(g<<8)|(b))
 	}
 	
 	def loadDefaultPalette(): Unit = {
-		// TODO
+		curTable(0) = getRgb(117,117,117);
+        curTable(1) = getRgb(39, 27,143);
+        curTable(2) = getRgb(0,0,171);
+        curTable(3) = getRgb(71,0,159);
+        curTable(4) = getRgb(143,0,119);
+        curTable(5) = getRgb(171,0, 19);
+        curTable(6) = getRgb(167,0,0);
+        curTable(7) = getRgb(127,11,0);
+        curTable(8) = getRgb(67,47,0);
+        curTable(9) = getRgb(0,71,0);
+        curTable(10) = getRgb(0,81,0);
+        curTable(11) = getRgb(0,63,23);
+        curTable(12) = getRgb(27,63,95);
+        curTable(13) = getRgb(0,0,0);
+        curTable(14) = getRgb(0,0,0);
+        curTable(15) = getRgb(0,0,0);
+        curTable(16) = getRgb(188,188,188);
+        curTable(17) = getRgb(0,115,239);
+        curTable(18) = getRgb(35,59,239);
+        curTable(19) = getRgb(131,0,243);
+        curTable(20) = getRgb(191,0,191);
+        curTable(21) = getRgb(231,0,91);
+        curTable(22) = getRgb(219,43,0);
+        curTable(23) = getRgb(203,79,15);
+        curTable(24) = getRgb(139,115,0);
+        curTable(25) = getRgb(0,151,0);
+        curTable(26) = getRgb(0,171,0);
+        curTable(27) = getRgb(0,147, 59);
+        curTable(28) = getRgb(0,131,139);
+        curTable(29) = getRgb(0,0,0);
+        curTable(30) = getRgb(0,0,0);
+        curTable(31) = getRgb(0,0,0);
+        curTable(32) = getRgb(255,255,255);
+        curTable(33) = getRgb(63,191,255);
+        curTable(34) = getRgb(95,151,255);
+        curTable(35) = getRgb(167,139,253);
+        curTable(36) = getRgb(247,123,255);
+        curTable(37) = getRgb(255,119,183);
+        curTable(38) = getRgb(255,119,99);
+        curTable(39) = getRgb(255,155,59);
+        curTable(40) = getRgb(243,191,63);
+        curTable(41) = getRgb(131,211,19);
+        curTable(42) = getRgb(79,223,75);
+        curTable(43) = getRgb(88,248,152);
+        curTable(44) = getRgb(0,235,219);
+        curTable(45) = getRgb(0,0,0);
+        curTable(46) = getRgb(0,0,0);
+        curTable(47) = getRgb(0,0,0);
+        curTable(48) = getRgb(255,255,255);
+        curTable(49) = getRgb(171,231,255);
+        curTable(50) = getRgb(199,215,255);
+        curTable(51) = getRgb(215,203,255);
+        curTable(52) = getRgb(255,199,255);
+        curTable(53) = getRgb(255,199,219);
+        curTable(54) = getRgb(255,191,179);
+        curTable(55) = getRgb(255,219,171);
+        curTable(56) = getRgb(255,231,163);
+        curTable(57) = getRgb(227,255,163);
+        curTable(58) = getRgb(171,243,191);
+        curTable(59) = getRgb(179,255,207);
+        curTable(60) = getRgb(159,255,243);
+        curTable(61) = getRgb(0,0,0);
+        curTable(62) = getRgb(0,0,0);
+        curTable(63) = getRgb(0,0,0);
+        
+        makeTables();
+		setEmphasis(0);
 	}
 	
   }
