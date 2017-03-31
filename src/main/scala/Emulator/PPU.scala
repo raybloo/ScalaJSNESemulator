@@ -110,17 +110,17 @@ class PPU {
 		return (rgb&0xFF).asInstanceOf[Byte]
 	}
 	
-	def getRgb(r: Byte, g: Byte, b: Byte): Byte = {
-		return ((r<<16)|(g<<8)|(b))
+	def getRgb(r: Int, g: Int, b: Int): Byte = {
+		return ((r<<16)|(g<<8)|(b)).asInstanceOf[Byte]
 	}
 	
 	def loadDefaultPalette(): Unit = {
 		curTable(0) = getRgb(117,117,117);
-        curTable(1) = getRgb(39, 27,143);
+        curTable(1) = getRgb(39,27,143);
         curTable(2) = getRgb(0,0,171);
         curTable(3) = getRgb(71,0,159);
         curTable(4) = getRgb(143,0,119);
-        curTable(5) = getRgb(171,0, 19);
+        curTable(5) = getRgb(171,0,19);
         curTable(6) = getRgb(167,0,0);
         curTable(7) = getRgb(127,11,0);
         curTable(8) = getRgb(67,47,0);
