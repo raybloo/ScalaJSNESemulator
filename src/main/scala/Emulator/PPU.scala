@@ -222,18 +222,18 @@ class PPU {
     // Tile data:
     var pix: Array[Int] = new Array(64)
     
-    var fbIndex : Int = null
-    var tIndex : Int = null
-    var x : Int = null
-    var y : Int = null
-    var w : Int = null
-    var h : Int = null
-    var palIndex : Int = null
-    var tpri : Int = null
+    var fbIndex : Int = _
+    var tIndex : Int = _
+    var x : Int = _
+    var y : Int = _
+    var w : Int = _
+    var h : Int = _
+    var palIndex : Int = _
+    var tpri : Int = _
     var initialized : Boolean = false
     var opaque : Array[Boolean] = new Array(8);
   
-    def setBuffer(/* TODO */): Unit = {
+    def setBuffer(scanlineArray : Array[Int]): Unit = {
     }
   
     def setScanline(sline: Int, b1: Int, b2: Int): Unit = {
@@ -241,7 +241,7 @@ class PPU {
     
     def isTransparent(x: Int, y: Int): Boolean = pix((y << 3) + x) == 0
   
-    def render(buffer: Array, srcx1: Int, srcy1: Int, srcx2: Int, srcy2: Int, dx: Int, dy: Int, palAdd: Int, palette: Array, flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array): Unit = {
+    def render(buffer: Array[Int], srcx1: Int, srcy1: Int, srcx2: Int, srcy2: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
     }
   
     // TODO if necessary : To and from JSON
