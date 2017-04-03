@@ -69,7 +69,7 @@ class PPU {
     */
   private class PaletteTable {
     var curTable : Array[Int] = new Array(64)
-    var emphTable : Array[Array[Int]] = new Array.ofDim(8, 64)
+    var emphTable : Array[Array[Int]] = Array.ofDim[Int](8, 64)
     var currentEmph : Int = -1
 	
     /** Resets the Palette */
