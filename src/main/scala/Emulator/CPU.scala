@@ -41,7 +41,7 @@ class CPU(nes: NES) {
   var cyclesToHalt: Int = 0
   var crash: Boolean = false
   var irqRequested: Boolean = false
-  var irqType: Byte = 3
+  var irqType: Int = 3
   /* irqType are:
     - 0 : normal
     - 1 : nmi
@@ -53,19 +53,19 @@ class CPU(nes: NES) {
   var interrupt = null
 
   //Addressing Modes
-  val ZERO_PAGE: Byte = 0
-  val RELATIVE: Byte = 1
-  val IGNORE: Byte = 2
-  val ABSOLUTE: Byte = 3
-  val ACCUMULATOR: Byte = 4
-  val IMMEDIATE: Byte = 5
-  val INDEXED_ZERO_PAGE_X: Byte = 6
-  val INDEXED_ZERO_PAGE_Y: Byte = 7
-  val INDEXED_ABSOLUTE_X: Byte = 8
-  val INDEXED_ABSOLUTE_Y: Byte = 9
-  val PRE_INDEXED_INDIRECT: Byte = 10
-  val POST_INDEXED_INDIRECT: Byte = 11
-  val ABSOLUTE_INDIRECT: Byte = 12
+  val ZERO_PAGE: Int = 0
+  val RELATIVE: Int = 1
+  val IMPLIED: Int = 2
+  val ABSOLUTE: Int = 3
+  val ACCUMULATOR: Int = 4
+  val IMMEDIATE: Int = 5
+  val INDEXED_ZERO_PAGE_X: Int = 6
+  val INDEXED_ZERO_PAGE_Y: Int = 7
+  val INDEXED_ABSOLUTE_X: Int = 8
+  val INDEXED_ABSOLUTE_Y: Int = 9
+  val PRE_INDEXED_INDIRECT: Int = 10
+  val POST_INDEXED_INDIRECT: Int = 11
+  val INDIRECT_ABSOLUTE: Int = 12
 
 
 
@@ -184,7 +184,7 @@ class CPU(nes: NES) {
   }
 
   /**Load 1 byte from memory */
-  def load1Word(address: Short): Byte = {
+  def load1Word(address: Int): Int = {
     if (address < 0x2000) {
       memory(address & 0x7ff)
     }
@@ -194,7 +194,7 @@ class CPU(nes: NES) {
   }
 
   /** Load 2 bytes from memory */
-  def load2Words(address: Short): Short = {
+  def load2Words(address: Int): Int = {
     if (address < 0x1FFF) {
       (memory(address & 0x7FF) | (memory((address+1) & 0x7FF) << 8)).asInstanceOf[Short]
     }
@@ -238,9 +238,9 @@ class CPU(nes: NES) {
       breakCommand = breakCommand_new
       irqRequested = false
     }
-    var opinf = nes.mmap.load((pc+1).toShort)
-    var cycleCount = (opinf >> 24)
-    var cycleAdd = 0
+    var opinf: Int = nes.mmap.load((pc+1).toShort)
+    var cycleCount: Int = (opinf >> 24)
+    var cycleAdd: Int = 0
 
     //Find address mode
     var addrMode = (opinf >> 16) & 0xff
@@ -251,17 +251,65 @@ class CPU(nes: NES) {
     var addr = 0
     (addrMode: @ switch) match {
       case ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
-        addr = load1Word((opaddr+2).toShort)
+        addr = load1Word(opaddr+2)
       case RELATIVE => //Relative mode
-        load2Words((opaddr+2).toShort)
+        addr = load1Word(opaddr+2)
         if(addr<0x80) {
           addr += pc
         } else {
           addr += pc-0x0100
         }
-      case IGN
-      case ABSOLUTE => //Absolute mode
-        addr
+      case ABSOLUTE => //Absolute mode, 2 bytes in the opcode used as index
+        addr = load2Words(opaddr+2)
+      case IMPLIED => //Address implied in instruction
+      case ACCUMULATOR => //Address is in the accumulator of the processor
+        addr = a
+      case IMMEDIATE => //Immediate mode, the address is after the opcode
+        addr = pc
+      case INDEXED_ZERO_PAGE_X => //Zero Page Indexed mode X as index,
+        addr = (load1Word(opaddr+2)+x)&0xff //like zero mode + register x
+      case INDEXED_ZERO_PAGE_Y => //Zero Page Indexed mode Y as index,
+        addr = (load1Word(opaddr+2)+y)&0xff //like zero mode + register x
+      case INDEXED_ABSOLUTE_X => //Absolute Indexed mode X as index
+        addr = load2Words(opaddr+2) //like Zero Page Indexed but with the high byte
+        if((addr&0xff00)!=((addr+x)&0xff00)){
+          cycleAdd = 1
+        }
+        addr+=x
+      case INDEXED_ABSOLUTE_Y => //Absolute Indexed mode Y as index
+        addr = load2Words(opaddr+2) //like Zero Page Indexed but with the high byte
+        if((addr&0xff00)!=((addr+x)&0xff00)){
+          cycleAdd = 1
+        }
+        addr+=x
+      case PRE_INDEXED_INDIRECT => // Pre-indexed Indirect mode
+        // Find the 16-bit address starting at the given location plus
+        // the current X register. The value is the contents of that
+        // address.
+        addr = load1Word(opaddr+2)
+        if((addr&0xff00)!=((addr+x)&0xff00)){
+          cycleAdd = 1
+        }
+        addr+=x
+        addr &= 0xff //load only from zero pages
+        addr = load2Words(addr)
+      case POST_INDEXED_INDIRECT => // Post-indexed Indirect mode
+        // Find the 16-bit address contained in the given location
+        // (and the one following). Add to that address the contents
+        // of the Y register. Fetch the value
+        // stored at that adress.
+        addr = load2Words(load1Word(opaddr+2));
+        if((addr&0xff00)!=((addr+y)&0xff00)){
+          cycleAdd = 1
+        }
+        addr+=y
+      case INDIRECT_ABSOLUTE => //Indirect Absolute mode, Find the 16-bit address contained at the given location
+        addr = load2Words(opaddr+2)
+        if(addr <= 0x1FFF) {
+          addr = memory(addr) + (memory((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //Read from address given in op
+        } else {
+          addr = nes.mmap.load(addr) + (nes.mmap.load((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
+        }
     }
   }
 

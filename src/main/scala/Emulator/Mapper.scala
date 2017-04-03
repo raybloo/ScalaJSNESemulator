@@ -12,11 +12,11 @@ class Mapper(mapper_type: Int) {
 
   }
 
-  def load(addr: Short): Byte = {
+  def load(addr: Int): Int = {
     0
   }
 
-  def write(address: Short, value: Byte): Unit = {
+  def write(address: Int, value: Int): Unit = {
 
   }
 }
