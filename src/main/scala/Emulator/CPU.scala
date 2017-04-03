@@ -1,5 +1,8 @@
 package Emulator
 
+import scala.annotation.switch
+import scala.scalajs.js.Dynamic
+
 /** The Cpu fetches, decodes and executes instructions
   * from de prgrom. It communicates to other parts of the
   * nes like the ppu and the rom
@@ -43,7 +46,7 @@ class CPU(nes: NES) {
     - 0 : normal
     - 1 : nmi
     - 2 : reset
-    - 3 : undefined
+    - anything else : undefined
    */
 
  //Maskable Interrupt
@@ -51,18 +54,19 @@ class CPU(nes: NES) {
 
   //Addressing Modes
   val ZERO_PAGE: Byte = 0
-  val INDEXED_ZERO_PAGE_X: Byte = 1
-  val INDEXED_ZERO_PAGE_Y: Byte = 2
+  val RELATIVE: Byte = 1
+  val IGNORE: Byte = 2
   val ABSOLUTE: Byte = 3
-  val INDEXED_ABSOLUTE_X: Byte = 4
-  val INDEXED_ABSOLUTE_Y: Byte = 5
-  val IMPLIED: Byte = 6
-  val ACCUMULATOR: Byte = 7
-  val IMMEDIATE: Byte = 8
-  val RELATIVE: Byte = 9
-  val INDEXED_INDIRECT: Byte = 10
-  val INDIRECT_INDEXED: Byte = 11
-  val INDIRECT: Byte = 12
+  val ACCUMULATOR: Byte = 4
+  val IMMEDIATE: Byte = 5
+  val INDEXED_ZERO_PAGE_X: Byte = 6
+  val INDEXED_ZERO_PAGE_Y: Byte = 7
+  val INDEXED_ABSOLUTE_X: Byte = 8
+  val INDEXED_ABSOLUTE_Y: Byte = 9
+  val PRE_INDEXED_INDIRECT: Byte = 10
+  val POST_INDEXED_INDIRECT: Byte = 11
+  val ABSOLUTE_INDIRECT: Byte = 12
+
 
 
   /** Reset memory and all cpu flags and registers */
@@ -209,8 +213,72 @@ class CPU(nes: NES) {
     }
   }
 
+  /** Emulate one instruction of the cpu */
+  def emulate(): Unit = {
+    var temp: Byte = 0
+    var add: Byte = 0
+    if(irqRequested) {
+      temp = getProcessorFlags
+      pc_new = pc
+      interruptDisable_new = interruptDisable
+      (irqType: @switch) match {
+        case 0 => //normal interrupt
+          if (!interruptDisable) {
+            doIrq
+          }
+        case 1 => //non maskable interrupt
+          doNmIrq
+        case 2 => //reset
+          doResetIrq
+        case default =>
+          Dynamic.global.console("Unspecified interrupt request type")
+      }
+      pc = pc_new
+      interruptDisable = interruptDisable_new
+      breakCommand = breakCommand_new
+      irqRequested = false
+    }
+    var opinf = nes.mmap.load((pc+1).toShort)
+    var cycleCount = (opinf >> 24)
+    var cycleAdd = 0
 
+    //Find address mode
+    var addrMode = (opinf >> 16) & 0xff
 
+    //Increment PC by number of op bytes
+    var opaddr = pc
+    pc += (opinf >> 16) & 0xff
+    var addr = 0
+    (addrMode: @ switch) match {
+      case ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
+        addr = load1Word((opaddr+2).toShort)
+      case RELATIVE => //Relative mode
+        load2Words((opaddr+2).toShort)
+        if(addr<0x80) {
+          addr += pc
+        } else {
+          addr += pc-0x0100
+        }
+      case IGN
+      case ABSOLUTE => //Absolute mode
+        addr
+    }
+  }
+
+  /** Execute interrupt code */
+  def doIrq: Unit = {
+
+  }
+
+  /** Execute unmaksable interrupt code */
+  def doNmIrq: Unit = {
+
+  }
+
+  /** Execute reset interrupt code */
+  def doResetIrq: Unit = {
+
+  }
 
   def emulateCycle(): Int = {
     0
