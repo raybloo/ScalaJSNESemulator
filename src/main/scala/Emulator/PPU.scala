@@ -19,7 +19,7 @@ class PPU {
     val height : Int = h
     val name : String = n
 	
-    // Initialised filled with 0's.
+    // Initially filled with 0's.
     var tile : Array[Int] = new Array(width*height)(0)
     /** Controls which palette is assigned to each part of the background.  */
     var attrib : Array[Int] = new Array(width*height)(0)
@@ -55,31 +55,73 @@ class PPU {
     // TODO if necessary : To and from JSON
   }
   
+    /** The PaletteTable will contain two arraysa and one global variable:
+    * - curTable:
+    *     Contains the used color palette. Can be either the default NES, NTSC or PAL.
+    *
+    * - Emphasis Table (emphTable):
+    *	    Will contain the corresponding color emphasis for each color of the palette.
+    *
+    * - Emphasis (currentEmph and emph):
+    *      The color emphasis will be used to change the luminance amd chrominance phasor of each color, by using the RGB components.
+    * 
+    * Each NES has only one color Palette.
+    */
   private class PaletteTable {
     var curTable : Array[Int] = new Array(64)
     var emphTable : Array[Array[Int]] = new Array.ofDim(8, 64)
     var currentEmph : Int = -1
 	
-    def reset(): Unit = {
-      setEmphasis(0)
-    }
+    /** Resets the Palette */
+    def reset(): Unit = setEmphasis(0)
 	
+    /** Loads the NTSC Palette */
     def loadNTSCPalette(): Unit = {
       curTable = Array(0x525252, 0xB40000, 0xA00000, 0xB1003D, 0x740069, 0x00005B, 0x00005F, 0x001840, 0x002F10, 0x084A08, 0x006700, 0x124200, 0x6D2800, 0x000000, 0x000000, 0x000000, 0xC4D5E7, 0xFF4000, 0xDC0E22, 0xFF476B, 0xD7009F, 0x680AD7, 0x0019BC, 0x0054B1, 0x006A5B, 0x008C03, 0x00AB00, 0x2C8800, 0xA47200, 0x000000, 0x000000, 0x000000, 0xF8F8F8, 0xFFAB3C, 0xFF7981, 0xFF5BC5, 0xFF48F2, 0xDF49FF, 0x476DFF, 0x00B4F7, 0x00E0FF, 0x00E375, 0x03F42B, 0x78B82E, 0xE5E218, 0x787878, 0x000000, 0x000000, 0xFFFFFF, 0xFFF2BE, 0xF8B8B8, 0xF8B8D8, 0xFFB6FF, 0xFFC3FF, 0xC7D1FF, 0x9ADAFF, 0x88EDF8, 0x83FFDD, 0xB8F8B8, 0xF5F8AC, 0xFFFFB0, 0xF8D8F8, 0x000000, 0x000000)
       makeTables()
       setEmphasis(0)
     }
 	
+    /** Loads the PAL Palette */
     def loadPALPalette(): Unit = {
       curTable = Array(0x525252, 0xB40000, 0xA00000, 0xB1003D, 0x740069, 0x00005B, 0x00005F, 0x001840, 0x002F10, 0x084A08, 0x006700, 0x124200, 0x6D2800, 0x000000, 0x000000, 0x000000, 0xC4D5E7, 0xFF4000, 0xDC0E22, 0xFF476B, 0xD7009F, 0x680AD7, 0x0019BC, 0x0054B1, 0x006A5B, 0x008C03, 0x00AB00, 0x2C8800, 0xA47200, 0x000000, 0x000000, 0x000000, 0xF8F8F8, 0xFFAB3C, 0xFF7981, 0xFF5BC5, 0xFF48F2, 0xDF49FF, 0x476DFF, 0x00B4F7, 0x00E0FF, 0x00E375, 0x03F42B, 0x78B82E, 0xE5E218, 0x787878, 0x000000, 0x000000, 0xFFFFFF, 0xFFF2BE, 0xF8B8B8, 0xF8B8D8, 0xFFB6FF, 0xFFC3FF, 0xC7D1FF, 0x9ADAFF, 0x88EDF8, 0x83FFDD, 0xB8F8B8, 0xF5F8AC, 0xFFFFB0, 0xF8D8F8, 0x000000, 0x000000)
       makeTables()
       setEmphasis(0);
     }
 	
+    /** Creates the emphasis table for each existing emphasis (0 to 8), using the given Palette (NTSC, PAL or default) */
     def makeTables(): Unit = {
-      // TODO
+      var r, g, b, col, i : Int = 0
+      var rFactor, gFactor, bFactor : Double = 1.0
+      
+      // Calculate a table for each possible emphasis
+      for (emph <- 1 to 8) {
+        // Determine color componenet factors
+        if ((emph & 1) != 0) {
+          rFactor = 0.75
+          bFactor = 0.75
+        }
+        if ((emph & 2) != 0) {
+          rFactor = 0.75
+          gFactor = 0.75
+        }
+        if ((emph & 4) != 0) {
+          gFactor = 0.75
+          bFactor = 0.75
+        }
+        
+        // Calculate table
+        for (i <- 1 to 64) {
+          col = curTable(i)
+          r = scala.math.floor(getRed(col) * rFactor).asInstanceOf[Int]
+          g = scala.math.floor(getGreen(col) * gFactor).asInstanceOf[Int]
+          b = scala.math.floor(getBlue(col) * bFactor).asInstanceOf[Int]
+          emphTable(emph)(i) = getRgb(r,g,b)
+        }
+      }
     }
 	
+    /** Sets the current emphasis to given value. */
     def setEmphasis(emph: Int): Unit = {
       if (emph != currentEmph) {
         currentEmph = emph
@@ -88,16 +130,22 @@ class PPU {
       }
     }
 	
+    /** Get the given entry form the curTable */
     def getEntry(yiq: Int): Int = curTable(yiq)
 	
+    /** Extract red component from a RGB color */
     def getRed(rgb: Int): Int = (rgb>>16)&0xFF
 	
+    /** Extract green component from a RGB color */
     def getGreen(rgb: Int): Int = (rgb>>8)&0xFF
 	
+    /** Extract blue component from a RGB color */
     def getBlue(rgb: Int): Int = (rgb&0xFF)
 	
-    def getRgb(r: Int, g: Int, b: Int): Int = (r<<16)|(g<<8)|(b))
+    /** Get the RGB color, given the red, blue and green component */
+    def getRgb(r: Int, g: Int, b: Int): Int = ((r<<16)|(g<<8)|(b))
 	
+    /** Loads the default NES Palette (given by wiki) */
     def loadDefaultPalette(): Unit = {
       curTable(0) = getRgb(117,117,117);
       curTable(1) = getRgb(39,27,143);
