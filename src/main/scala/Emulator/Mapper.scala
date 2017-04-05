@@ -16,7 +16,7 @@ class Mapper(mapper_type: Int) {
     0
   }
 
-  def write(address: Int, value: Int): Unit = {
+  def write(address: Int, value: Byte): Unit = {
 
   }
 }

@@ -11,14 +11,15 @@ class CPU(nes: NES) {
 
   //Memory
   var memory = new Array[Byte](0x10000)
+  //Bytes in scala are signed, so we'll have to unsign it when loading the memory
 
   //Registers:
-  var pc: Short = 0 //Program Counter (16 bits)
-  var sp: Short = 0 //Stack Pointer (16 bits)
-  var a: Byte = 0 //Accumulator (8 bits)
-  var x: Byte = 0 //Index Register X (8 bits)
-  var y: Byte = 0 //Index Register Y (8 bits)
-  var p: Byte = 0 //Processor Status (8 bits)
+  var pc: Int = 0 //Program Counter (16 bits)
+  var sp: Int = 0 //Stack Pointer (16 bits)
+  var a: Int = 0 //Accumulator (8 bits)
+  var x: Int = 0 //Index Register X (8 bits)
+  var y: Int = 0 //Index Register Y (8 bits)
+  var p: Int = 0 //Processor Status (8 bits)
 
   //Processor Status parts, separated for convenience
   var carryFlag: Boolean = false //0th bit
@@ -31,8 +32,8 @@ class CPU(nes: NES) {
   var negativeFlag: Boolean = false //7th bit
 
   //New Flags, some flags and the pc need to have a place to store their new values
-  var pc_new: Short = 0
-  var interruptDisable_new = false
+  var pc_new: Int = 0
+  var interruptDisable_new: Boolean = false
   var unused_new: Boolean = false
   var breakCommand_new: Boolean = false
 
@@ -59,13 +60,13 @@ class CPU(nes: NES) {
   val ABSOLUTE: Int = 3
   val ACCUMULATOR: Int = 4
   val IMMEDIATE: Int = 5
-  val INDEXED_ZERO_PAGE_X: Int = 6
-  val INDEXED_ZERO_PAGE_Y: Int = 7
-  val INDEXED_ABSOLUTE_X: Int = 8
-  val INDEXED_ABSOLUTE_Y: Int = 9
-  val PRE_INDEXED_INDIRECT: Int = 10
-  val POST_INDEXED_INDIRECT: Int = 11
-  val INDIRECT_ABSOLUTE: Int = 12
+  val ZERO_PAGE_XINDEXED: Int = 6
+  val ZERO_PAGE_YINDEXED: Int = 7
+  val ABSOLUTE_XINDEXED: Int = 8
+  val ABSOLUTE_YINDEXED: Int = 9
+  val XINDEXED_INDIRECT: Int = 10
+  val INDIRECT_YINDEXED: Int = 11
+  val INDIRECT: Int = 12
 
 
 
@@ -142,7 +143,7 @@ class CPU(nes: NES) {
   */
 
   /** Get all the flags into one single Byte */
-  def getProcessorFlags(): Byte = {
+  def getProcessorFlags: Byte = {
     var flags: Byte = 32
     if(carryFlag) {
       flags = (flags + 1).toByte
@@ -183,28 +184,33 @@ class CPU(nes: NES) {
     negativeFlag = (pStatus & 128) != 0
   }
 
+  /** Return the unsigned value of a Byte in the form of an Int */
+  def unsign(byte: Int): Int = {
+    byte & 0xff
+  }
+
   /**Load 1 byte from memory */
   def load1Word(address: Int): Int = {
     if (address < 0x2000) {
-      memory(address & 0x7ff)
+      unsign(memory(address & 0x7ff))
     }
     else {
-      nes.mmap.load(address)
+      unsign(nes.mmap.load(address))
     }
   }
 
   /** Load 2 bytes from memory */
   def load2Words(address: Int): Int = {
     if (address < 0x1FFF) {
-      (memory(address & 0x7FF) | (memory((address+1) & 0x7FF) << 8)).asInstanceOf[Short]
+      unsign(memory(address & 0x7FF)) | (unsign(memory((address+1) & 0x7FF)) << 8)
     }
     else {
-      (nes.mmap.load(address) | (nes.mmap.load((address+1).asInstanceOf[Short]) << 8)).asInstanceOf[Short]
+      unsign(nes.mmap.load(address)) | (unsign(nes.mmap.load(address+1)) << 8)
     }
   }
 
   /** Write in the memory */
-  def write(address: Short, value: Byte): Unit = {
+  def write(address: Int, value: Byte): Unit = {
     if(address < 0x2000) {
       memory(address & 0x7FF) = value
     }
@@ -215,7 +221,7 @@ class CPU(nes: NES) {
 
   /** Emulate one instruction of the cpu */
   def emulate(): Unit = {
-    var temp: Byte = 0
+    var temp: Int = 0
     var add: Byte = 0
     if(irqRequested) {
       temp = getProcessorFlags
@@ -224,13 +230,13 @@ class CPU(nes: NES) {
       (irqType: @switch) match {
         case 0 => //normal interrupt
           if (!interruptDisable) {
-            doIrq
+            doIrq(temp.toByte)
           }
         case 1 => //non maskable interrupt
-          doNmIrq
+          doNmIrq(temp.toByte)
         case 2 => //reset
           doResetIrq
-        case default =>
+        case _ =>
           Dynamic.global.console("Unspecified interrupt request type")
       }
       pc = pc_new
@@ -238,7 +244,7 @@ class CPU(nes: NES) {
       breakCommand = breakCommand_new
       irqRequested = false
     }
-    var opinf: Int = nes.mmap.load((pc+1).toShort)
+    val opinf: Int = nes.mmap.load((pc+1))
     var cycleCount: Int = (opinf >> 24)
     var cycleAdd: Int = 0
 
@@ -266,23 +272,23 @@ class CPU(nes: NES) {
         addr = a
       case IMMEDIATE => //Immediate mode, the address is after the opcode
         addr = pc
-      case INDEXED_ZERO_PAGE_X => //Zero Page Indexed mode X as index,
+      case ZERO_PAGE_XINDEXED => //Zero Page Indexed mode X as index,
         addr = (load1Word(opaddr+2)+x)&0xff //like zero mode + register x
-      case INDEXED_ZERO_PAGE_Y => //Zero Page Indexed mode Y as index,
+      case ZERO_PAGE_YINDEXED => //Zero Page Indexed mode Y as index,
         addr = (load1Word(opaddr+2)+y)&0xff //like zero mode + register x
-      case INDEXED_ABSOLUTE_X => //Absolute Indexed mode X as index
+      case ABSOLUTE_XINDEXED => //Absolute Indexed mode X as index
         addr = load2Words(opaddr+2) //like Zero Page Indexed but with the high byte
         if((addr&0xff00)!=((addr+x)&0xff00)){
           cycleAdd = 1
         }
         addr+=x
-      case INDEXED_ABSOLUTE_Y => //Absolute Indexed mode Y as index
+      case ABSOLUTE_YINDEXED => //Absolute Indexed mode Y as index
         addr = load2Words(opaddr+2) //like Zero Page Indexed but with the high byte
         if((addr&0xff00)!=((addr+x)&0xff00)){
           cycleAdd = 1
         }
         addr+=x
-      case PRE_INDEXED_INDIRECT => // Pre-indexed Indirect mode
+      case XINDEXED_INDIRECT => // Pre-indexed Indirect mode
         // Find the 16-bit address starting at the given location plus
         // the current X register. The value is the contents of that
         // address.
@@ -293,7 +299,7 @@ class CPU(nes: NES) {
         addr+=x
         addr &= 0xff //load only from zero pages
         addr = load2Words(addr)
-      case POST_INDEXED_INDIRECT => // Post-indexed Indirect mode
+      case INDIRECT_YINDEXED => // Post-indexed Indirect mode
         // Find the 16-bit address contained in the given location
         // (and the one following). Add to that address the contents
         // of the Y register. Fetch the value
@@ -303,29 +309,131 @@ class CPU(nes: NES) {
           cycleAdd = 1
         }
         addr+=y
-      case INDIRECT_ABSOLUTE => //Indirect Absolute mode, Find the 16-bit address contained at the given location
+      case INDIRECT => //Indirect Absolute mode, Find the 16-bit address contained at the given location
         addr = load2Words(opaddr+2)
         if(addr <= 0x1FFF) {
-          addr = memory(addr) + (memory((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //Read from address given in op
+          addr = unsign(memory(addr)) + (unsign(memory((addr & 0xff)) | (((addr & 0xff) + 1) & 0xff)) << 8) //Read from address given in op
         } else {
-          addr = nes.mmap.load(addr) + (nes.mmap.load((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
+          addr = unsign(nes.mmap.load(addr)) + (nes.mmap.load((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
         }
+      case _ =>
+        Dynamic.global.console("Invalid Address Mode used")
+    }
+    addr&=0xffff //Address mustn't exceed 16 bits
+
+    (opinf: @switch) match {
+      case 0 => //ADC: Add with carry (memory and accumulator)
+        temp = a + load1Word(addr) + (if(carryFlag) 1 else 0)
+        overflowFlag = (!(((a ^ load1Word(addr)) & 0x80)!=0) && (((a ^ temp) & 0x80))!=0)
+        carryFlag = temp > 0xff
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = a == 0
+        a = temp & 0xff
+        cycleCount += cycleAdd
+      case 1 => //AND: And memory with accumulator
+        a = a & load1Word(addr)
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = a == 0
+        if(addrMode!=INDIRECT_YINDEXED) cycleCount += cycleAdd
+      case 2 => //ASL: Shift left one bit
+        if(addrMode == ACCUMULATOR) {
+          carryFlag = (a & 0x80) != 0
+          a = (a << 1) & 0xff
+          negativeFlag = (a & 0x80) != 0
+          zeroFlag = a == 0
+        } else {
+          temp = load1Word(addr)
+          carryFlag = (temp & 0x80) != 0
+          temp = (temp << 1) & 0xff
+          negativeFlag = (temp & 0x80) != 0
+          zeroFlag = temp == 0
+          write(addr,temp.toByte)
+        }
+      case 3  => //BCC: Branch on carry clear
+        if(!carryFlag) {
+          cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
+          pc = addr
+        }
+      case 4  => //BCS: Branch on carry set
+        if(carryFlag) {
+          cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
+          pc = addr
+        }
+      case 5  => //BEQ: Branch on zero
+        if(zeroFlag) {
+          cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
+          pc = addr
+        }
+      case 6  => //BIT: Test bits in memory with accumulator
+        temp = load1Word(addr)
+        negativeFlag = (temp & 0x80) != 0
+        overflowFlag = (temp & 0x40) != 0
+        temp &= a
+        zeroFlag = temp == 0
+      case 7  => //BMI: Branch on negative result
+        if(negativeFlag) {
+          cycleCount += 1
+          pc = addr
+        }
+      case 8  => //BNE: Branch on not zero
+        if(!zeroFlag) {
+          cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
+          pc = addr
+        }
+      case 9  => //BPL: Branch on positiv result
+        if(!negativeFlag) {
+          cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
+          pc = addr
+        }
+      case 10  => //BRK: Force Break
+        pc += 2
+        push((pc>>8).toByte);
+        push(pc.toByte);
+        breakCommand = true
+        push(getProcessorFlags)
+        interruptDisable = true
+        pc = load2Words(0xfffe)
+        pc -= 1
+      case _ =>
+        Dynamic.global.console("Invalid op")
+
     }
   }
 
+
+
   /** Execute interrupt code */
-  def doIrq: Unit = {
+  def doIrq(status: Byte): Unit = {
 
   }
 
   /** Execute unmaksable interrupt code */
-  def doNmIrq: Unit = {
+  def doNmIrq(status: Byte): Unit = {
 
   }
 
   /** Execute reset interrupt code */
   def doResetIrq: Unit = {
 
+  }
+
+  /** Push a value on the stack */
+  def push(value: Byte): Unit = {
+    nes.mmap.write(sp,value)
+    sp -= 1
+    stackwrap
+  }
+
+  /** Pop the top value of the stack */
+  def pop(): Int = {
+    sp += 1
+    stackwrap
+    nes.mmap.load(sp)
+  }
+
+  /** Wrap the stack pointer */
+  def stackwrap = {
+    sp = 0x0100 | (sp&0xff)
   }
 
   def emulateCycle(): Int = {
