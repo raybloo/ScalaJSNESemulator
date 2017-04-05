@@ -23,7 +23,7 @@ class CPU(nes: NES) {
 
   //Processor Status parts, separated for convenience
   var carryFlag: Boolean = false //0th bit
-  var zeroFlag: Boolean = true //1st bit
+  var zeroFlag: Boolean = false //1st bit
   var interruptDisable: Boolean = true //2nd bit
   var decimalModeFlag: Boolean = false //3rd bit
   var breakCommand: Boolean = false //4th bit
@@ -115,12 +115,12 @@ class CPU(nes: NES) {
     interruptDisable_new = true
     overflowFlag = false
     negativeFlag = false
-    zeroFlag = true
+    zeroFlag = false
     unused = true
     unused_new = true
     breakCommand = true
     breakCommand_new = true
-    p = getProcessorFlags()
+    p = getProcessorFlags
 
     opdata = ??? //new opData
     cyclesToHalt = 0
@@ -134,13 +134,6 @@ class CPU(nes: NES) {
 
     var programRom = nes.rom.prgRom
   }
-
-  /* I m not using that anymore, but I keep it somewhere just in case it was of some use
-  /** Find where the program begins */
-  def getResetVector(): Short = {
-    loadMemory(-4,true) // 0xFFFC
-  }
-  */
 
   /** Get all the flags into one single Byte */
   def getProcessorFlags: Byte = {
@@ -330,7 +323,7 @@ class CPU(nes: NES) {
         zeroFlag = a == 0
         a = temp & 0xff
         cycleCount += cycleAdd
-      case 1 => //AND: And memory with accumulator
+      case 1 => //AND: And memory with accumulator, stores in accumulator
         a = a & load1Word(addr)
         negativeFlag = (temp & 0x80) != 0
         zeroFlag = a == 0
@@ -380,7 +373,7 @@ class CPU(nes: NES) {
           cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
           pc = addr
         }
-      case 9  => //BPL: Branch on positiv result
+      case 9  => //BPL: Branch on positive result
         if(!negativeFlag) {
           cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
           pc = addr
@@ -394,6 +387,168 @@ class CPU(nes: NES) {
         interruptDisable = true
         pc = load2Words(0xfffe)
         pc -= 1
+      case 11  => //BVC: Branch on overflow clear
+        if(!overflowFlag) {
+          cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
+          pc = addr
+        }
+      case 12  => //BVS: Branch on overflow set
+        if(overflowFlag) {
+          cycleCount += (if((opaddr&0xff00)!=(addr&0xff00)) 2 else 1)
+          pc = addr
+        }
+      case 13  => //CLC: Clear carry flag
+        carryFlag = false
+      case 14  => //CLD: Clear decimal flag
+        decimalModeFlag = false
+      case 15  => //CLI: Clear interrupt flag
+        interruptDisable = false
+      case 16  => //CLV: Clear overflow flag
+        overflowFlag = false
+      case 17  => //CMP: Compare memory and accumulator
+        temp = a - load1Word(addr)
+        carryFlag = temp >= 0
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = (temp&0xff) == 0
+        cycleCount += cycleAdd
+      case 18  => //CPX: Compare memory and index X
+        temp = x - load1Word(addr)
+        carryFlag = temp >= 0
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = (temp&0xff) == 0
+      case 19  => //CPY: Compare memory and index Y
+        temp = y - load1Word(addr)
+        carryFlag = temp >= 0
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = (temp&0xff) == 0
+      case 20  => //DEC: Decrement memory by one
+        temp = (load1Word(addr)-1)
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = (temp&0xff) == 0
+        write(addr,temp.toByte)
+      case 21  => //DEX: Decrement index X by one
+        x = (x-1)&0xff
+        negativeFlag = (x & 0x80) != 0
+        zeroFlag = x == 0
+      case 22  => //DEY: Decrement index Y by one
+        y = (y-1)&0xff
+        negativeFlag = (y & 0x80) != 0
+        zeroFlag = x == 0
+      case 23  => //EOR: XOR Memory with accumulator, stores in accumulator
+        a = load1Word(addr)^a
+        negativeFlag = (a & 0x80) != 0
+        zeroFlag = a == 0
+        cycleCount += cycleAdd
+      case 24  => //INC: Increment memory by one
+        temp = (load1Word(addr)+1)
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = (temp&0xff) == 0
+        write(addr,temp.toByte)
+      case 25  => //INX: Increment index X by one
+        x = (x+1)&0xff
+        negativeFlag = (x & 0x80) != 0
+        zeroFlag = x == 0
+      case 26  => //INY: Increment index Y by one
+        y = (y+1)&0xff
+        negativeFlag = (y & 0x80) != 0
+        zeroFlag = y == 0
+      case 27  => //JMP: Jump to new location
+        pc = addr-1
+      case 28  => //JSR: Jump to new location, pushing the 2 address bytes on the stack
+        push((pc>>8).toByte)
+        push(pc.toByte)
+        pc = addr-1
+      case 29 => //LDA: Load accumulator with memory
+        a = load1Word(addr)
+        negativeFlag = (a & 0x80) != 0
+        zeroFlag = a == 0
+      case 30 => //LDX: Load index X with memory
+        x = load1Word(addr)
+        negativeFlag = (x & 0x80) != 0
+        zeroFlag = x == 0
+      case 31 => //LDY: Load index Y with memory
+        y = load1Word(addr)
+        negativeFlag = (y & 0x80) != 0
+        zeroFlag = y == 0
+      case 32 => //LSR: Shift right one bit
+        if(addrMode == ACCUMULATOR) {
+          carryFlag = (a & 0x01) != 0
+          a = (a >> 1) & 0xff
+          zeroFlag = a == 0
+        } else {
+          temp = load1Word(addr)
+          carryFlag = (temp & 0x01) != 0
+          temp = (temp >> 1) & 0xff
+          zeroFlag = temp == 0
+          write(addr,temp.toByte)
+        }
+        negativeFlag = false //when right shifting, the sign bit always becomes 0
+      case 33 => //NOP: No operation
+      case 34 => //ORA: OR memory with accumulator, stores in accumulator
+        temp = (load1Word(addr)|a)&0xff
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = temp == 0
+        if(addrMode!=INDIRECT_YINDEXED) cycleCount += cycleAdd
+      case 35 => //PHA: Push accumulator on stack
+        push(a.toByte)
+      case 36 => //PHP: Push processor status on stack
+        breakCommand = true
+        push(getProcessorFlags)
+      case 37 => //PLA: Pop accumulator from stack
+        a = pop
+        negativeFlag = (a & 0x80) != 0
+        zeroFlag = a == 0
+      case 38 => //PLP: Pop processor status from stack
+        setProcessorFlags(pop.toByte)
+      case 39 => //ROL: Rotate one bit left
+        if(addrMode == ACCUMULATOR){
+          temp = a
+          add = if(carryFlag) 1 else 0
+          carryFlag = (temp & 0x80) != 0
+          temp = ((temp<<1)&0xff)+add
+          a = temp
+        } else {
+          temp = load1Word(addr)
+          add = if(carryFlag) 1 else 0
+          carryFlag = (temp & 0x80) != 0
+          temp = ((temp<<1)&0xff)+add
+          write(addr, temp.toByte)
+        }
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = temp == 0
+      case 40 => //ROR: Rotate one bit right
+        if(addrMode == ACCUMULATOR){
+          add = if(carryFlag) 1 else 0
+          carryFlag = (a & 0x01) != 0
+          temp = ((a>>1)&0xff)+(add<<7)
+          a = temp
+        } else {
+          temp = load1Word(addr)
+          add = if(carryFlag) 1 else 0
+          carryFlag = (temp & 0x01) != 0
+          temp = ((temp>>1)&0xff)+(add<<7)
+          write(addr, temp.toByte)
+        }
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = temp == 0
+      case 41 => //RTI: Return from interrupt, pop status and pc from stack
+        setProcessorFlags(pop.toByte)
+        pc = pop
+        pc += (pop<<8)
+        if(pc == 0xffff) {
+          //TODO exit function
+          return
+        }
+        pc -= 1
+        unused = true
+      case 42 => //RTS: Return from subroutine, pop pc from stack
+        pc = pop
+        pc += (pop<<8)
+        if(pc == 0xffff) {//return from NSF play routine
+          //TODO exit function
+          return
+        }
+      case 43 => //SBC: Subtract memory from accumulator with borrow
       case _ =>
         Dynamic.global.console("Invalid op")
 
@@ -425,7 +580,7 @@ class CPU(nes: NES) {
   }
 
   /** Pop the top value of the stack */
-  def pop(): Int = {
+  def pop: Int = {
     sp += 1
     stackwrap
     nes.mmap.load(sp)
