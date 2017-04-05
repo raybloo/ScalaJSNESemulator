@@ -224,8 +224,6 @@ class PPU {
     
     var fbIndex : Int = _
     var tIndex : Int = _
-    var x : Int = _
-    var y : Int = _
     var w : Int = _
     var h : Int = _
     var palIndex : Int = _
@@ -234,14 +232,40 @@ class PPU {
     var opaque : Array[Boolean] = new Array(8);
   
     def setBuffer(scanlineArray : Array[Int]): Unit = {
+      var y : Int = 0
+      for (y <- 1 to 8) setScanline(y, scanline[y], scanline[y+8])
     }
   
     def setScanline(sline: Int, b1: Int, b2: Int): Unit = {
+      var initialized : Boolean = true
+      var tIndex : Int = sline<<3
+      var x : Int = 0
+      
+      for (x <- 1 to 8) {
+        pix(tIndex + x) = ((b1 >> (7 - x)) & 1) + (((b2 >> (7 - x)) & 1) << 1
+        if(pix(tIndex + x) == 0) opaque(sline) = false
+      }
     }
     
     def isTransparent(x: Int, y: Int): Boolean = pix((y << 3) + x) == 0
   
+    /**
+      * 
+      * dx and dy = will be the first x and y coordinates of sprite data
+      */
     def render(buffer: Array[Int], srcx1: Int, srcy1: Int, srcx2: Int, srcy2: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
+      
+      if (dx < -7 || dx >= 256 || dy < -7 || dy >= 240) return
+      
+      w = srcx2 - srcx1
+      h = srcy2 - srcy1
+      
+      if (dx < 0) srcx1 -= dx
+      if (dx + srcx2 >= 256) srcx2 = 256 - dx
+      if (dy < 0) srcy1 -= dy
+      if (dy + srcy2 >= 240) srcy2 = 240- dy
+      
+      // TODO : The huge if - else if - else
     }
   
     // TODO if necessary : To and from JSON
