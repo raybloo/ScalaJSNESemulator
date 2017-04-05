@@ -233,7 +233,7 @@ class PPU {
   
     def setBuffer(scanlineArray : Array[Int]): Unit = {
       var y : Int = 0
-      for (y <- 1 to 8) setScanline(y, scanline[y], scanline[y+8])
+      for (y <- 1 to 8) setScanline(y, scanlineArray(y), scanlineArray(y+8))
     }
   
     def setScanline(sline: Int, b1: Int, b2: Int): Unit = {
@@ -242,8 +242,8 @@ class PPU {
       var x : Int = 0
       
       for (x <- 1 to 8) {
-        pix(tIndex + x) = ((b1 >> (7 - x)) & 1) + (((b2 >> (7 - x)) & 1) << 1
-        if(pix(tIndex + x) == 0) opaque(sline) = false
+        pix(tIndex + x) = ((b1 >> (7 - x)) & 1) + (((b2 >> (7 - x)) & 1) << 1)
+        if (pix(tIndex + x) == 0) opaque(sline) = false
       }
     }
     
