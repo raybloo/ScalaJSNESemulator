@@ -1,8 +1,5 @@
 package Emulator
 
-
-import java.nio.ByteBuffer
-
 import scala.language.dynamics
 import scala.scalajs.js
 import js.typedarray.ArrayBuffer
