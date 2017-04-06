@@ -213,7 +213,7 @@ class CPU(nes: NES) {
   }
 
   /** Emulate one instruction of the cpu */
-  def emulate(): Unit = {
+  def emulate(): Int = {
     var temp: Int = 0
     var add: Byte = 0
     if(irqRequested) {
@@ -537,7 +537,7 @@ class CPU(nes: NES) {
         pc += (pop<<8)
         if(pc == 0xffff) {
           //TODO exit function
-          return
+          return -1
         }
         pc -= 1
         unused = true
@@ -546,30 +546,101 @@ class CPU(nes: NES) {
         pc += (pop<<8)
         if(pc == 0xffff) {//return from NSF play routine
           //TODO exit function
-          return
+          return -1
         }
       case 43 => //SBC: Subtract memory from accumulator with borrow
+        temp = a-load1Word(addr)-(1-(if(carryFlag)1 else 0))
+        negativeFlag = (temp & 0x80) != 0
+        zeroFlag = (temp&0xff) == 0
+        overflowFlag = ((((a^temp)&0x80)!=0 && ((a^load1Word(addr))&0x80)!=0))
+        carryFlag = temp < 0
+        a = temp&0xff
+        if(addrMode!=INDIRECT_YINDEXED) cycleCount += cycleAdd
+      case 44 => //SEC: Set carry flag
+        carryFlag = true
+      case 45 => //SED: Set decimal flag
+        decimalModeFlag = true
+      case 46 => //SEI: Set interrupt disable status
+        interruptDisable = true
+      case 47 => //STA: Store accumulator in memory
+        write(addr,a.toByte)
+      case 48 => //STX: Store index X in memory
+        write(addr,x.toByte)
+      case 49 => //STY: Store index Y in memory
+        write(addr,y.toByte)
+      case 50 => //TAX: Transfer accumulator to index X
+        x = a
+        negativeFlag = (a & 0x80) != 0
+        zeroFlag = a == 0
+      case 51 => //TAY: Transfer accumulator to index Y
+        y = a
+        negativeFlag = (a & 0x80) != 0
+        zeroFlag = a == 0
+      case 52 => //TSX: Transfer stack pointer to index X
+        x = (sp-0x0100)
+        negativeFlag = (sp & 0x80) != 0
+        zeroFlag = x == 0
+      case 53 => //TXA: Transfer index X to accumulator
+        a = x
+        negativeFlag = (x & 0x80) != 0
+        zeroFlag = x == 0
+      case 54 => //TXS: Transfer index X to stack pointer
+        sp = (x+0x0100)
+        stackwrap
+      case 55 => //TYA: Transfer index y to accumulator
+        a = y
+        negativeFlag = (y & 0x80) != 0
+        zeroFlag = y == 0
       case _ =>
+        nes.stop
         Dynamic.global.console("Invalid op")
 
     }
+    cycleCount
   }
 
+  /** Request interrupt */
+  def RequestIrq(irType: Int): Unit = {
+    if(!(irqRequested && irType == 0)) { //normal interrupt type
+      irqRequested = true
+      irqType = irType
+    }
+  }
 
+  /** Indicates whether 2 addresses points to the same 1/4 KB of memory */
+  def pageCrossed(addr1: Int, addr2: Int): Boolean = {
+    (addr1&0xff00)!=(addr2&0xff000)
+  }
 
   /** Execute interrupt code */
   def doIrq(status: Byte): Unit = {
+    pc_new += 1
+    push((pc_new>>8).toByte)
+    push(pc_new.toByte)
+    push(status)
+    interruptDisable_new = true
+    breakCommand_new = false
+    pc_new = nes.mmap.load(0xfffe) | (nes.mmap.load(0xffff) << 8)
+    pc_new -= 1
 
   }
 
   /** Execute unmaksable interrupt code */
   def doNmIrq(status: Byte): Unit = {
-
+    if ((nes.mmap.load(0x2000) & 0x80) != 0) { // Check whether VBlank Interrupts are enabled
+      pc_new += 1
+      push((pc_new >> 8).toByte)
+      push(pc_new.toByte)
+      push(status)
+      pc_new = nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8)
+      pc_new -= 1
+    }
   }
 
   /** Execute reset interrupt code */
   def doResetIrq: Unit = {
-
+    pc_new = this.nes.mmap.load(0xfffc) | (this.nes.mmap.load(0xfffd) << 8)
+    pc_new -= 1
   }
 
   /** Push a value on the stack */
@@ -589,10 +660,6 @@ class CPU(nes: NES) {
   /** Wrap the stack pointer */
   def stackwrap = {
     sp = 0x0100 | (sp&0xff)
-  }
-
-  def emulateCycle(): Int = {
-    0
   }
 
 }

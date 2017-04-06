@@ -65,7 +65,7 @@ class NES() {
     while(!stop) {
       if (cpu.cyclesToHalt == 0) {
         // Execute a CPU instruction
-        cycles = cpu.emulateCycle()
+        cycles = cpu.emulate()
         if(emulateSound) {
           //TODO implement when papu is functionnal
         }
