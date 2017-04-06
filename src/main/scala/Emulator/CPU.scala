@@ -37,22 +37,6 @@ class CPU(nes: NES) {
   var unused_new: Boolean = false
   var breakCommand_new: Boolean = false
 
-  //Additional emulator utility variables
-  var opdata: Boolean = false
-  var cyclesToHalt: Int = 0
-  var crash: Boolean = false
-  var irqRequested: Boolean = false
-  var irqType: Int = 3
-  /* irqType are:
-    - 0 : normal
-    - 1 : nmi
-    - 2 : reset
-    - anything else : undefined
-   */
-
- //Maskable Interrupt
-  var interrupt = null
-
   //Addressing Modes
   val ZERO_PAGE: Int = 0
   val RELATIVE: Int = 1
@@ -68,7 +52,21 @@ class CPU(nes: NES) {
   val INDIRECT_YINDEXED: Int = 11
   val INDIRECT: Int = 12
 
+  //Additional emulator utility variables
+  OpData.init
+  var cyclesToHalt: Int = 0
+  var crash: Boolean = false
+  var irqRequested: Boolean = false
+  var irqType: Int = 3
+  /* irqType are:
+    - 0 : normal
+    - 1 : nmi
+    - 2 : reset
+    - anything else : undefined
+   */
 
+ //Maskable Interrupt
+  var interrupt = null
 
   /** Reset memory and all cpu flags and registers */
   def reset: Unit = {
@@ -122,7 +120,7 @@ class CPU(nes: NES) {
     breakCommand_new = true
     p = getProcessorFlags
 
-    opdata = ??? //new opData
+    OpData.init
     cyclesToHalt = 0
 
     // Reset crash flag:
@@ -212,7 +210,9 @@ class CPU(nes: NES) {
     }
   }
 
-  /** Emulate one instruction of the cpu */
+  /** Emulate one instruction of the cpu
+    *  return number of cycle
+    */
   def emulate(): Int = {
     var temp: Int = 0
     var add: Byte = 0
@@ -237,16 +237,25 @@ class CPU(nes: NES) {
       breakCommand = breakCommand_new
       irqRequested = false
     }
-    val opinf: Int = nes.mmap.load((pc+1))
-    var cycleCount: Int = (opinf >> 24)
+
+    //Get next instruction of the program
+    val op: Int = nes.mmap.load(pc+1)
+
+    //Retrieve op infos from opdata object
+    val opinf: Int = OpData.instructions(op)
+
+    //Save the cycle cost of the instruction (may still change at this point)
+    var cycleCount: Int = OpData.cycles(op)
     var cycleAdd: Int = 0
 
     //Find address mode
-    var addrMode = (opinf >> 16) & 0xff
+    val addrMode = (OpData.addressingMode(op) & 0xff)
 
     //Increment PC by number of op bytes
     var opaddr = pc
-    pc += (opinf >> 16) & 0xff
+    pc += (OpData.opSize(op) & 0xff)
+
+    //Find the effective address
     var addr = 0
     (addrMode: @ switch) match {
       case ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
@@ -297,7 +306,7 @@ class CPU(nes: NES) {
         // (and the one following). Add to that address the contents
         // of the Y register. Fetch the value
         // stored at that adress.
-        addr = load2Words(load1Word(opaddr+2));
+        addr = load2Words(load1Word(opaddr+2))
         if((addr&0xff00)!=((addr+y)&0xff00)){
           cycleAdd = 1
         }
@@ -314,6 +323,7 @@ class CPU(nes: NES) {
     }
     addr&=0xffff //Address mustn't exceed 16 bits
 
+    //Instruction code
     (opinf: @switch) match {
       case 0 => //ADC: Add with carry (memory and accumulator)
         temp = a + load1Word(addr) + (if(carryFlag) 1 else 0)
@@ -380,8 +390,8 @@ class CPU(nes: NES) {
         }
       case 10  => //BRK: Force Break
         pc += 2
-        push((pc>>8).toByte);
-        push(pc.toByte);
+        push((pc>>8).toByte)
+        push(pc.toByte)
         breakCommand = true
         push(getProcessorFlags)
         interruptDisable = true
@@ -639,7 +649,7 @@ class CPU(nes: NES) {
 
   /** Execute reset interrupt code */
   def doResetIrq: Unit = {
-    pc_new = this.nes.mmap.load(0xfffc) | (this.nes.mmap.load(0xfffd) << 8)
+    pc_new = nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8)
     pc_new -= 1
   }
 
@@ -662,4 +672,295 @@ class CPU(nes: NES) {
     sp = 0x0100 | (sp&0xff)
   }
 
+  /** Contains all the data about the opcode in 4 arrays
+    * every instruction has its own:
+    *   - number of instruction (for our switch)
+    *   - set of valid addressingMode
+    *   - size (parameters)
+    *   - number of cycles it takes to process
+    * This data was originally stored in only one array with all 4 infos
+    * stored on the same Int, but I split it for convenience and readability
+    */
+  object OpData {
+    //Default: opdata is filled with invalid values before being initialized
+    var instructions: Array[Int] = Array.fill[Int](0x0100)(-1)
+    var addressingMode: Array[Int] = Array.fill[Int](0x0100)(-1)
+    var opSize: Array[Int] = Array.fill[Int](0x0100)(-1)
+    var cycles: Array[Int] = Array.fill[Int](0x0100)(-1)
+
+    def setOp(opAddr: Int,instr: Int,addrMode: Int,size: Int,cycle: Int): Unit = {
+      instructions(opAddr) = instr
+      addressingMode(opAddr) = addrMode
+      opSize(opAddr) = size
+      cycles(opAddr) = cycle
+    }
+
+    def init: Unit = {
+      //Fill in all valid opcodes:
+
+      // ADC:
+      setOp(0x69,0,IMMEDIATE,2,2)
+      setOp(0x65,0,ZERO_PAGE,2,3)
+      setOp(0x75,0,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0x6D,0,ABSOLUTE,3,4)
+      setOp(0x7D,0,ABSOLUTE_XINDEXED,3,4)
+      setOp(0x79,0,ABSOLUTE_YINDEXED,3,4)
+      setOp(0x61,0,XINDEXED_INDIRECT,2,6)
+      setOp(0x71,0,INDIRECT_YINDEXED,2,5)
+
+      // AND:
+      setOp(0x29,1,IMMEDIATE,2,2)
+      setOp(0x25,1,ZERO_PAGE,2,3)
+      setOp(0x35,1,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0x2D,1,ABSOLUTE,3,4)
+      setOp(0x3D,1,ABSOLUTE_XINDEXED,3,4)
+      setOp(0x39,1,ABSOLUTE_YINDEXED,3,4)
+      setOp(0x21,1,XINDEXED_INDIRECT,2,6)
+      setOp(0x31,1,INDIRECT_YINDEXED,2,5)
+
+      // ASL:
+      setOp(0x0A,2,ACCUMULATOR,1,2)
+      setOp(0x06,2,ZERO_PAGE,2,5)
+      setOp(0x16,2,ZERO_PAGE_XINDEXED,2,6)
+      setOp(0x0E,2,ABSOLUTE,3,6)
+      setOp(0x1E,2,ABSOLUTE_XINDEXED,3,7)
+
+      // BCC:
+      setOp(0x90,3,RELATIVE,2,2)
+
+      // BCS:
+      setOp(0xB0,4,RELATIVE,2,2)
+
+      // BEQ:
+      setOp(0xF0,5,RELATIVE,2,2)
+
+      // BIT:
+      setOp(0x24,6,ZERO_PAGE,2,3)
+      setOp(0x2C,6,ABSOLUTE,3,4)
+
+      // BMI:
+      setOp(0x30,7,RELATIVE,2,2)
+
+      // BNE:
+      setOp(0xD0,8,RELATIVE,2,2)
+
+      // BPL:
+      setOp(0x10,9,RELATIVE,2,2)
+
+      // BRK:
+      setOp(0x00,10,IMPLIED,1,7)
+
+      // BVC:
+      setOp(0x50,11,RELATIVE,2,2)
+
+      // BVS:
+      setOp(0x70,12,RELATIVE,2,2)
+
+      // CLC:
+      setOp(0x18,13,IMPLIED,1,2)
+
+      // CLD:
+      setOp(0xD8,14,IMPLIED,1,2)
+
+      // CLI:
+      setOp(0x58,15,IMPLIED,1,2)
+
+      // CLV:
+      setOp(0xB8,16,IMPLIED,1,2)
+
+      // CMP:
+      setOp(0xC9,17,IMMEDIATE,2,2)
+      setOp(0xC5,17,ZERO_PAGE,2,3)
+      setOp(0xD5,17,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0xCD,17,ABSOLUTE,3,4)
+      setOp(0xDD,17,ABSOLUTE_XINDEXED,3,4)
+      setOp(0xD9,17,ABSOLUTE_YINDEXED,3,4)
+      setOp(0xC1,17,XINDEXED_INDIRECT,2,6)
+      setOp(0xD1,17,INDIRECT_YINDEXED,2,5)
+
+      // CPX:
+      setOp(0xE0,18,IMMEDIATE,2,2)
+      setOp(0xE4,18,ZERO_PAGE,2,3)
+      setOp(0xEC,18,ABSOLUTE,3,4)
+
+      // CPY:
+      setOp(0xC0,19,IMMEDIATE,2,2)
+      setOp(0xC4,19,ZERO_PAGE,2,3)
+      setOp(0xCC,19,ABSOLUTE,3,4)
+
+      // DEC:
+      setOp(0xC6,20,ZERO_PAGE,2,5)
+      setOp(0xD6,20,ZERO_PAGE_XINDEXED,2,6)
+      setOp(0xCE,20,ABSOLUTE,3,6)
+      setOp(0xDE,20,ABSOLUTE_XINDEXED,3,7)
+
+      // DEX:
+      setOp(0xCA,21,IMPLIED,1,2)
+
+      // DEY:
+      setOp(0x88,22,IMPLIED,1,2)
+
+      // EOR:
+      setOp(0x49,23,IMMEDIATE,2,2)
+      setOp(0x45,23,ZERO_PAGE,2,3)
+      setOp(0x55,23,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0x4D,23,ABSOLUTE,3,4)
+      setOp(0x5D,23,ABSOLUTE_XINDEXED,3,4)
+      setOp(0x59,23,ABSOLUTE_YINDEXED,3,4)
+      setOp(0x41,23,XINDEXED_INDIRECT,2,6)
+      setOp(0x51,23,INDIRECT_YINDEXED,2,5)
+
+      // INC:
+      setOp(0xE6,24,ZERO_PAGE,2,5)
+      setOp(0xF6,24,ZERO_PAGE_XINDEXED,2,6)
+      setOp(0xEE,24,ABSOLUTE,3,6)
+      setOp(0xFE,24,ABSOLUTE_XINDEXED,3,7)
+
+      // INX:
+      setOp(0xE8,25,IMPLIED,1,2)
+
+      // INY:
+      setOp(0xC8,26,IMPLIED,1,2)
+
+      // JMP:
+      setOp(0x4C,27,ABSOLUTE,3,3)
+      setOp(0x6C,27,INDIRECT,3,5)
+
+      // JSR:
+      setOp(0x20,28,ABSOLUTE,3,6)
+
+      // LDA:
+      setOp(0xA9,29,IMMEDIATE,2,2)
+      setOp(0xA5,29,ZERO_PAGE,2,3)
+      setOp(0xB5,29,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0xAD,29,ABSOLUTE,3,4)
+      setOp(0xBD,29,ABSOLUTE_XINDEXED,3,4)
+      setOp(0xB9,29,ABSOLUTE_YINDEXED,3,4)
+      setOp(0xA1,29,XINDEXED_INDIRECT,2,6)
+      setOp(0xB1,29,INDIRECT_YINDEXED,2,5)
+
+
+      // LDX:
+      setOp(0xA2,30,IMMEDIATE,2,2)
+      setOp(0xA6,30,ZERO_PAGE,2,3)
+      setOp(0xB6,30,ZERO_PAGE_YINDEXED,2,4)
+      setOp(0xAE,30,ABSOLUTE,3,4)
+      setOp(0xBE,30,ABSOLUTE_YINDEXED,3,4)
+
+      // LDY:
+      setOp(0xA0,31,IMMEDIATE,2,2)
+      setOp(0xA4,31,ZERO_PAGE,2,3)
+      setOp(0xB4,31,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0xAC,31,ABSOLUTE,3,4)
+      setOp(0xBC,31,ABSOLUTE_XINDEXED,3,4)
+
+      // LSR:
+      setOp(0x4A,32,ACCUMULATOR,1,2)
+      setOp(0x46,32,ZERO_PAGE,2,5)
+      setOp(0x56,32,ZERO_PAGE_XINDEXED,2,6)
+      setOp(0x4E,32,ABSOLUTE,3,6)
+      setOp(0x5E,32,ABSOLUTE_XINDEXED,3,7)
+
+      // NOP:
+      setOp(0xEA,33,IMPLIED,1,2)
+
+      // ORA:
+      setOp(0x09,34,IMMEDIATE,2,2)
+      setOp(0x05,34,ZERO_PAGE,2,3)
+      setOp(0x15,34,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0x0D,34,ABSOLUTE,3,4)
+      setOp(0x1D,34,ABSOLUTE_XINDEXED,3,4)
+      setOp(0x19,34,ABSOLUTE_YINDEXED,3,4)
+      setOp(0x01,34,XINDEXED_INDIRECT,2,6)
+      setOp(0x11,34,INDIRECT_YINDEXED,2,5)
+
+      // PHA:
+      setOp(0x48,35,IMPLIED,1,3)
+
+      // PHP:
+      setOp(0x08,36,IMPLIED,1,3)
+
+      // PLA:
+      setOp(0x68,37,IMPLIED,1,4)
+
+      // PLP:
+      setOp(0x28,38,IMPLIED,1,4)
+
+      // ROL:
+      setOp(0x2A,39,ACCUMULATOR,1,2)
+      setOp(0x26,39,ZERO_PAGE,2,5)
+      setOp(0x36,39,ZERO_PAGE_XINDEXED,2,6)
+      setOp(0x2E,39,ABSOLUTE,3,6)
+      setOp(0x3E,39,ABSOLUTE_XINDEXED,3,7)
+
+      // ROR:
+      setOp(0x6A,40,ACCUMULATOR,1,2)
+      setOp(0x66,40,ZERO_PAGE,2,5)
+      setOp(0x76,40,ZERO_PAGE_XINDEXED,2,6)
+      setOp(0x6E,40,ABSOLUTE,3,6)
+      setOp(0x7E,40,ABSOLUTE_XINDEXED,3,7)
+
+      // RTI:
+      setOp(0x40,41,IMPLIED,1,6)
+
+      // RTS:
+      setOp(0x60,42,IMPLIED,1,6)
+
+      // SBC:
+      setOp(0xE9,43,IMMEDIATE,2,2)
+      setOp(0xE5,43,ZERO_PAGE,2,3)
+      setOp(0xF5,43,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0xED,43,ABSOLUTE,3,4)
+      setOp(0xFD,43,ABSOLUTE_XINDEXED,3,4)
+      setOp(0xF9,43,ABSOLUTE_YINDEXED,3,4)
+      setOp(0xE1,43,XINDEXED_INDIRECT,2,6)
+      setOp(0xF1,43,INDIRECT_YINDEXED,2,5)
+
+      // SEC:
+      setOp(0x38,44,IMPLIED,1,2)
+
+      // SED:
+      setOp(0xF8,45,IMPLIED,1,2)
+
+      // SEI:
+      setOp(0x78,46,IMPLIED,1,2)
+
+      // STA:
+      setOp(0x85,47,ZERO_PAGE,2,3)
+      setOp(0x95,47,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0x8D,47,ABSOLUTE,3,4)
+      setOp(0x9D,47,ABSOLUTE_XINDEXED,3,5)
+      setOp(0x99,47,ABSOLUTE_YINDEXED,3,5)
+      setOp(0x81,47,XINDEXED_INDIRECT,2,6)
+      setOp(0x91,47,INDIRECT_YINDEXED,2,6)
+
+      // STX:
+      setOp(0x86,48,ZERO_PAGE,2,3)
+      setOp(0x96,48,ZERO_PAGE_YINDEXED,2,4)
+      setOp(0x8E,48,ABSOLUTE,3,4)
+
+      // STY:
+      setOp(0x84,49,ZERO_PAGE,2,3)
+      setOp(0x94,49,ZERO_PAGE_XINDEXED,2,4)
+      setOp(0x8C,49,ABSOLUTE,3,4)
+
+      // TAX:
+      setOp(0xAA,50,IMPLIED,1,2)
+
+      // TAY:
+      setOp(0xA8,51,IMPLIED,1,2)
+
+      // TSX:
+      setOp(0xBA,52,IMPLIED,1,2)
+
+      // TXA:
+      setOp(0x8A,53,IMPLIED,1,2)
+
+      // TXS:
+      setOp(0x9A,54,IMPLIED,1,2)
+
+      // TYA:
+      setOp(0x98,55,IMPLIED,1,2)
+    }
+  }
 }
