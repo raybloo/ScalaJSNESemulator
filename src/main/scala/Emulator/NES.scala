@@ -141,7 +141,7 @@ class NES() {
     }
     ui.updateStatus("Loading ROM...")
     // Load ROM file:
-    rom = new ROM
+    rom = new ROM(this)
     rom.openRom(romUrl)
     if(rom.checkRom) {
       reset
@@ -149,7 +149,7 @@ class NES() {
       if (mmap == null) {
         false
       } else {
-        mmap.loadROM();
+        mmap.loadROM
         //ppu.setMirroring(rom.getMirroringType)
         oldRomUrl = romUrl
         ui.updateStatus("Successfully loaded. Ready to be started.")

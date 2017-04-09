@@ -2,12 +2,10 @@ package Emulator
 
 import scala.annotation.switch
 import scala.scalajs.js.Dynamic
-/**
-  * The mapper class is mainly handles address translation
-  * Since a lot of the memory is mirrored, address ranges
-  * is smaller than it seems. Also I/O ports have some specific
-  * addresses that are accessed through the mapper. Mapper object
-  * are different from a game to another.
+
+/** The mapper class mainly handles address translation
+  * It acts like like a cartridge board. There are
+  * different types of mappers that vary from one game to another
   */
 class Mapper(mapper_type: Int,nes: NES) {
 
@@ -234,6 +232,7 @@ class Mapper(mapper_type: Int,nes: NES) {
     0
   }
 
+  /** Read state of first joypad */
   def joy1Read: Int = {
     var ret: Int = 0
     (joy1StrobeState: @switch) match {
@@ -248,6 +247,7 @@ class Mapper(mapper_type: Int,nes: NES) {
     ret
   }
 
+  /** Read state of second joypad */
   def joy2Read: Int = {
     var ret: Int = 0
     (joy1StrobeState: @switch) match {
@@ -262,5 +262,62 @@ class Mapper(mapper_type: Int,nes: NES) {
     ret
   }
 
+  /** Load ROM if valid*/
+  def loadROM: Unit = {
+    if (!nes.rom.checkRom || nes.rom.getPrgRomSize < 1) {
+      Dynamic.global.alert("NoMapper: Invalid ROM! Unable to load.")
+    } else {
+      loadPRGROM // Load ROM into memory
+      loadCHRROM // Load CHR-ROM
+      loadBatteryRam // Load Battery RAM (if present):
+      nes.cpu.requestIrq(2) // Send a reset irq to the cpu
+    }
+  }
+
+  def loadPRGROM: Unit = {
+    if (nes.rom.getPrgRomSize > 1) {
+      // Load the two first banks into memory.
+      //TODO: loadRomBank(0, 0x8000)
+      //TODO: loadRomBank(1, 0xC000)
+    }
+    else {
+      // Load the one bank into both memory locations:
+      //TODO: loadRomBank(0, 0x8000)
+      //TODO: loadRomBank(0, 0xC000)
+    }
+  }
+
+  def loadCHRROM: Unit = {
+    if (nes.rom.getChrRomSize > 0) {
+      //There is something weird with this if() condition
+      //In the original emulator, the variable being compared
+      //is called vromCount and counts the number of 4k banks
+      //the rom has. Now this value could never be == 1 since
+      //it was initialized as an int * 2...
+      //I won't use it for now
+      //if (nes.rom.getChrRomSize == 1) {
+        //TODO: loadVromBank(0,0x0000)
+        //TODO: loadVromBank(0,0x1000)
+      //} else {
+        //TODO: loadVromBank(0,0x0000)
+        //TODO: loadVromBank(1,0x1000)
+      //}
+    }
+    else {
+      Dynamic.global.console("No CHR-ROM banks found")
+    }
+  }
+
+  def loadBatteryRam: Unit = {
+    if (nes.rom.hasBatteryRam) {
+      /*
+      var ram = nes.rom.batteryRam;
+      if (ram !== null && ram.length == 0x2000) {
+        // Load Battery RAM into memory:
+        JSNES.Utils.copyArrayElements(ram, 0, nes.cpu.mem, 0x6000, 0x2000)
+      }
+      */
+    } //I'll need more time to implement this, since I don't quite understand this
+  }
 
 }

@@ -595,7 +595,7 @@ class CPU(nes: NES) {
   }
 
   /** Request interrupt */
-  def RequestIrq(irType: Int): Unit = {
+  def requestIrq(irType: Int): Unit = {
     if(!(irqRequested && irType == 0)) { //normal interrupt type
       irqRequested = true
       irqType = irType
