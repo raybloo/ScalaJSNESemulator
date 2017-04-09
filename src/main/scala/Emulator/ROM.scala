@@ -18,7 +18,7 @@ import scala.concurrent.Future
   *   the program to access different part of this ROM and get its mapper
   *   It is based on the rom.js class from Ben Fisherman's javascript nes emulator
   */
-class ROM {
+class ROM(nes: NES) {
 
   //ROM parts
   var fullRom: Array[Byte] = _
@@ -104,6 +104,11 @@ class ROM {
     fullRom.slice(offset,offset+(8196*size))
   }
 
+  /** Returns true when the rom has battery ram */
+  def hasBatteryRam: Boolean = {
+    (getHeader(6) & 2) != 0
+  }
+
   /** Returns true when the rom has the 512 bytes of trainer before the prgrom */
   def hasTrainer: Boolean = {
     (getHeader(6) & 4) != 0
@@ -150,7 +155,7 @@ class ROM {
   def createMapper: Mapper = {
     val num = getMapperNum
     if(isMapperSupported(num)) {
-      new Mapper(num)
+      new Mapper(num,nes)
     } else {
       Dynamic.global.console.log(s"Unsupported mapper, $num")
       null

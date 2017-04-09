@@ -18,7 +18,7 @@ object Main extends JSApp {
   var rom: ROM = null
 
   def main(): Unit = {
-    rom = new ROM()
+    rom = new ROM(nes)
     jQuery(setupUI _)
   }
 

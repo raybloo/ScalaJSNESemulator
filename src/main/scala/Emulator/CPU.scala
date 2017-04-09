@@ -37,21 +37,6 @@ class CPU(nes: NES) {
   var unused_new: Boolean = false
   var breakCommand_new: Boolean = false
 
-  //Addressing Modes
-  val ZERO_PAGE: Int = 0
-  val RELATIVE: Int = 1
-  val IMPLIED: Int = 2
-  val ABSOLUTE: Int = 3
-  val ACCUMULATOR: Int = 4
-  val IMMEDIATE: Int = 5
-  val ZERO_PAGE_XINDEXED: Int = 6
-  val ZERO_PAGE_YINDEXED: Int = 7
-  val ABSOLUTE_XINDEXED: Int = 8
-  val ABSOLUTE_YINDEXED: Int = 9
-  val XINDEXED_INDIRECT: Int = 10
-  val INDIRECT_YINDEXED: Int = 11
-  val INDIRECT: Int = 12
-
   //Additional emulator utility variables
   OpData.init
   var cyclesToHalt: Int = 0
@@ -258,39 +243,39 @@ class CPU(nes: NES) {
     //Find the effective address
     var addr = 0
     (addrMode: @ switch) match {
-      case ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
+      case OpData.ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
         addr = load1Word(opaddr+2)
-      case RELATIVE => //Relative mode
+      case OpData.RELATIVE => //Relative mode
         addr = load1Word(opaddr+2)
         if(addr<0x80) {
           addr += pc
         } else {
           addr += pc-0x0100
         }
-      case ABSOLUTE => //Absolute mode, 2 bytes in the opcode used as index
+      case OpData.ABSOLUTE => //Absolute mode, 2 bytes in the opcode used as index
         addr = load2Words(opaddr+2)
-      case IMPLIED => //Address implied in instruction
-      case ACCUMULATOR => //Address is in the accumulator of the processor
+      case OpData.IMPLIED => //Address implied in instruction
+      case OpData.ACCUMULATOR => //Address is in the accumulator of the processor
         addr = a
-      case IMMEDIATE => //Immediate mode, the address is after the opcode
+      case OpData.IMMEDIATE => //Immediate mode, the address is after the opcode
         addr = pc
-      case ZERO_PAGE_XINDEXED => //Zero Page Indexed mode X as index,
+      case OpData.ZERO_PAGE_XINDEXED => //Zero Page Indexed mode X as index,
         addr = (load1Word(opaddr+2)+x)&0xff //like zero mode + register x
-      case ZERO_PAGE_YINDEXED => //Zero Page Indexed mode Y as index,
+      case OpData.ZERO_PAGE_YINDEXED => //Zero Page Indexed mode Y as index,
         addr = (load1Word(opaddr+2)+y)&0xff //like zero mode + register x
-      case ABSOLUTE_XINDEXED => //Absolute Indexed mode X as index
+      case OpData.ABSOLUTE_XINDEXED => //Absolute Indexed mode X as index
         addr = load2Words(opaddr+2) //like Zero Page Indexed but with the high byte
         if((addr&0xff00)!=((addr+x)&0xff00)){
           cycleAdd = 1
         }
         addr+=x
-      case ABSOLUTE_YINDEXED => //Absolute Indexed mode Y as index
+      case OpData.ABSOLUTE_YINDEXED => //Absolute Indexed mode Y as index
         addr = load2Words(opaddr+2) //like Zero Page Indexed but with the high byte
         if((addr&0xff00)!=((addr+x)&0xff00)){
           cycleAdd = 1
         }
         addr+=x
-      case XINDEXED_INDIRECT => // Pre-indexed Indirect mode
+      case OpData.XINDEXED_INDIRECT => // Pre-indexed Indirect mode
         // Find the 16-bit address starting at the given location plus
         // the current X register. The value is the contents of that
         // address.
@@ -301,7 +286,7 @@ class CPU(nes: NES) {
         addr+=x
         addr &= 0xff //load only from zero pages
         addr = load2Words(addr)
-      case INDIRECT_YINDEXED => // Post-indexed Indirect mode
+      case OpData.INDIRECT_YINDEXED => // Post-indexed Indirect mode
         // Find the 16-bit address contained in the given location
         // (and the one following). Add to that address the contents
         // of the Y register. Fetch the value
@@ -311,7 +296,7 @@ class CPU(nes: NES) {
           cycleAdd = 1
         }
         addr+=y
-      case INDIRECT => //Indirect Absolute mode, Find the 16-bit address contained at the given location
+      case OpData.INDIRECT => //Indirect Absolute mode, Find the 16-bit address contained at the given location
         addr = load2Words(opaddr+2)
         if(addr <= 0x1FFF) {
           addr = unsign(memory(addr)) + (unsign(memory((addr & 0xff)) | (((addr & 0xff) + 1) & 0xff)) << 8) //Read from address given in op
@@ -337,9 +322,9 @@ class CPU(nes: NES) {
         a = a & load1Word(addr)
         negativeFlag = (temp & 0x80) != 0
         zeroFlag = a == 0
-        if(addrMode!=INDIRECT_YINDEXED) cycleCount += cycleAdd
+        if(addrMode!=OpData.INDIRECT_YINDEXED) cycleCount += cycleAdd
       case 2 => //ASL: Shift left one bit
-        if(addrMode == ACCUMULATOR) {
+        if(addrMode == OpData.ACCUMULATOR) {
           carryFlag = (a & 0x80) != 0
           a = (a << 1) & 0xff
           negativeFlag = (a & 0x80) != 0
@@ -481,7 +466,7 @@ class CPU(nes: NES) {
         negativeFlag = (y & 0x80) != 0
         zeroFlag = y == 0
       case 32 => //LSR: Shift right one bit
-        if(addrMode == ACCUMULATOR) {
+        if(addrMode == OpData.ACCUMULATOR) {
           carryFlag = (a & 0x01) != 0
           a = (a >> 1) & 0xff
           zeroFlag = a == 0
@@ -498,7 +483,7 @@ class CPU(nes: NES) {
         temp = (load1Word(addr)|a)&0xff
         negativeFlag = (temp & 0x80) != 0
         zeroFlag = temp == 0
-        if(addrMode!=INDIRECT_YINDEXED) cycleCount += cycleAdd
+        if(addrMode!=OpData.INDIRECT_YINDEXED) cycleCount += cycleAdd
       case 35 => //PHA: Push accumulator on stack
         push(a.toByte)
       case 36 => //PHP: Push processor status on stack
@@ -511,7 +496,7 @@ class CPU(nes: NES) {
       case 38 => //PLP: Pop processor status from stack
         setProcessorFlags(pop.toByte)
       case 39 => //ROL: Rotate one bit left
-        if(addrMode == ACCUMULATOR){
+        if(addrMode == OpData.ACCUMULATOR){
           temp = a
           add = if(carryFlag) 1 else 0
           carryFlag = (temp & 0x80) != 0
@@ -527,7 +512,7 @@ class CPU(nes: NES) {
         negativeFlag = (temp & 0x80) != 0
         zeroFlag = temp == 0
       case 40 => //ROR: Rotate one bit right
-        if(addrMode == ACCUMULATOR){
+        if(addrMode == OpData.ACCUMULATOR){
           add = if(carryFlag) 1 else 0
           carryFlag = (a & 0x01) != 0
           temp = ((a>>1)&0xff)+(add<<7)
@@ -565,7 +550,7 @@ class CPU(nes: NES) {
         overflowFlag = ((((a^temp)&0x80)!=0 && ((a^load1Word(addr))&0x80)!=0))
         carryFlag = temp < 0
         a = temp&0xff
-        if(addrMode!=INDIRECT_YINDEXED) cycleCount += cycleAdd
+        if(addrMode!=OpData.INDIRECT_YINDEXED) cycleCount += cycleAdd
       case 44 => //SEC: Set carry flag
         carryFlag = true
       case 45 => //SED: Set decimal flag
@@ -610,7 +595,7 @@ class CPU(nes: NES) {
   }
 
   /** Request interrupt */
-  def RequestIrq(irType: Int): Unit = {
+  def requestIrq(irType: Int): Unit = {
     if(!(irqRequested && irType == 0)) { //normal interrupt type
       irqRequested = true
       irqType = irType
@@ -687,6 +672,21 @@ class CPU(nes: NES) {
     var addressingMode: Array[Int] = Array.fill[Int](0x0100)(-1)
     var opSize: Array[Int] = Array.fill[Int](0x0100)(-1)
     var cycles: Array[Int] = Array.fill[Int](0x0100)(-1)
+
+    //Addressing Modes
+    final val ZERO_PAGE = 0
+    final val RELATIVE = 1
+    final val IMPLIED = 2
+    final val ABSOLUTE = 3
+    final val ACCUMULATOR = 4
+    final val IMMEDIATE = 5
+    final val ZERO_PAGE_XINDEXED = 6
+    final val ZERO_PAGE_YINDEXED = 7
+    final val ABSOLUTE_XINDEXED = 8
+    final val ABSOLUTE_YINDEXED = 9
+    final val XINDEXED_INDIRECT = 10
+    final val INDIRECT_YINDEXED = 11
+    final val INDIRECT = 12
 
     def setOp(opAddr: Int,instr: Int,addrMode: Int,size: Int,cycle: Int): Unit = {
       instructions(opAddr) = instr
