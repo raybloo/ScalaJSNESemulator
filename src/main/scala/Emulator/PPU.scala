@@ -249,7 +249,7 @@ class PPU {
     var palIndex : Int = _
     var tpri : Int = _
     var initialized : Boolean = false
-    var opaque : Array[Boolean] = new Array(8);
+    var opaque : Array[Boolean] = new Array(8)
   
   /** Will create the scanline */
     def setBuffer(scanlineArray : Array[Int]): Unit = {
@@ -284,7 +284,7 @@ class PPU {
       *   flipHorizontal : Horizontal flip of a sprite
       *   flipVertical : Vertical flip
       *   pritable : Unknown
-      *   tpri : Unknown
+      *   pri : Unknown
       */
     def render(buffer: Array[Int], srcx1v: Int, srcy1v: Int, srcx2v: Int, srcy2v: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
       var srcx1 = srcx1v
@@ -309,7 +309,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(x, y)
+            renderFunction(x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
           }
@@ -323,7 +323,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(x, y)
+            renderFunction(x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1
           }
@@ -338,7 +338,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(x, y)
+            renderFunction(x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
           }
@@ -353,7 +353,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(x, y)
+            renderFunction(x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1
           }
@@ -366,7 +366,7 @@ class PPU {
     }
     
     /** Helper function that actively renders tile to buffer. Used to not have duplicate code. */
-    def renderFunction(x: Int, y: Int): Unit = {
+    def renderFunction(x: Int, y: Int, pri: Int, priTable: Array[Int]): Unit = {
       if (x >= srcx1 && x < srcx2 && y >= srcy1 && y < srcy2) {
         palIndex = pix(tIndex)
         tpri = priTable(fbIndex)
