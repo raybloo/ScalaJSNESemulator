@@ -26,16 +26,16 @@ class CPU(nes: NES) {
   var zeroFlag: Boolean = false //1st bit
   var interruptDisable: Boolean = true //2nd bit
   var decimalModeFlag: Boolean = false //3rd bit
-  var breakCommand: Boolean = false //4th bit
-  var unused: Boolean= false //5th bit
+  var breakCommand: Boolean = true //4th bit
+  var unused: Boolean= true //5th bit
   var overflowFlag: Boolean = false //6th bit
   var negativeFlag: Boolean = false //7th bit
 
   //New Flags, some flags and the pc need to have a place to store their new values
   var pc_new: Int = 0
-  var interruptDisable_new: Boolean = false
-  var unused_new: Boolean = false
-  var breakCommand_new: Boolean = false
+  var interruptDisable_new: Boolean = true
+  var unused_new: Boolean = true
+  var breakCommand_new: Boolean = true
 
   //Additional emulator utility variables
   OpData.init
@@ -119,31 +119,31 @@ class CPU(nes: NES) {
   }
 
   /** Get all the flags into one single Byte */
-  def getProcessorFlags: Byte = {
-    var flags: Byte = 32
+  def getProcessorFlags: Int = {
+    var flags: Int = 0
     if(carryFlag) {
-      flags = (flags + 1).toByte
+      flags = flags + 1
     }
     if(zeroFlag) {
-      flags = (flags + 2).toByte
+      flags = flags + 2
     }
     if(interruptDisable) {
-      flags = (flags + 4).toByte
+      flags = flags + 4
     }
     if(decimalModeFlag) {
-      flags = (flags + 8).toByte
+      flags = flags + 8
     }
     if(breakCommand) {
-      flags = (flags + 16).toByte
+      flags = flags + 16
     }
     if(unused) {
-      flags = (flags + 32).toByte
+      flags = flags + 32
     }
     if(overflowFlag) {
-      flags = (flags + 64).toByte
+      flags = flags + 64
     }
     if(negativeFlag) {
-      flags = (flags + 128).toByte
+      flags = flags + 128
     }
     flags
   }
@@ -196,7 +196,7 @@ class CPU(nes: NES) {
   }
 
   /** Emulate one instruction of the cpu
-    *  return number of cycle
+    *  return number of cycles
     */
   def emulate(): Int = {
     var temp: Int = 0
@@ -378,7 +378,7 @@ class CPU(nes: NES) {
         push((pc>>8).toByte)
         push(pc.toByte)
         breakCommand = true
-        push(getProcessorFlags)
+        push(getProcessorFlags.toByte)
         interruptDisable = true
         pc = load2Words(0xfffe)
         pc -= 1
@@ -488,7 +488,7 @@ class CPU(nes: NES) {
         push(a.toByte)
       case 36 => //PHP: Push processor status on stack
         breakCommand = true
-        push(getProcessorFlags)
+        push(getProcessorFlags.toByte)
       case 37 => //PLA: Pop accumulator from stack
         a = pop
         negativeFlag = (a & 0x80) != 0
