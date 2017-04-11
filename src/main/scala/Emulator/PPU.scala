@@ -375,7 +375,7 @@ class PPU {
       if (x >= srcx1 && x < srcx2 && y >= srcy1 && y < srcy2) {
         palIndex = pix(tIndex)
         tpri = priTable(fbIndex)
-        if (palIndex != 0 && pri <= tpri&0xFF) {
+        if (palIndex != 0 && (pri <= tpri&0xFF)) {
           // Rendering tile to buffer
           buffer(fbIndex) = palette(palIndex+palAdd)
           tpri = (tpri&0xF00)|pri
