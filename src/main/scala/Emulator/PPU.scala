@@ -286,7 +286,11 @@ class PPU {
       *   pritable : Unknown
       *   tpri : Unknown
       */
-    def render(buffer: Array[Int], srcx1: Int, srcy1: Int, srcx2: Int, srcy2: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
+    def render(buffer: Array[Int], srcx1v: Int, srcy1v: Int, srcx2v: Int, srcy2v: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
+      var srcx1 = srcx1v
+      var srcx2 = srcx2v
+      var srcy1 = srcy1v
+      var srcy2 = srcy2v
       
       if (dx < -7 || dx >= 256 || dy < -7 || dy >= 240) return
       
@@ -306,8 +310,8 @@ class PPU {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(x, y)
-            fbIndex++
-            tIndex++
+            fbIndex += 1
+            tIndex += 1
           }
           // Not sure why he first take 8 then adds 256 ? Kept it as is for now
           fbIndex -= 8
@@ -320,8 +324,8 @@ class PPU {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(x, y)
-            fbIndex++
-            tIndex--
+            fbIndex += 1
+            tIndex -= 1
           }
           fbIndex -= 8
           fbIndex += 256
@@ -335,8 +339,8 @@ class PPU {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(x, y)
-            fbIndex++
-            tIndex++ 
+            fbIndex += 1
+            tIndex += 1
           }
           fbIndex -= 8
           fbIndex += 256
@@ -350,8 +354,8 @@ class PPU {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(x, y)
-            fbIndex++
-            tIndex--
+            fbIndex += 1
+            tIndex -= 1
           }
           fbIndex -= 8
           fbIndex += 256
