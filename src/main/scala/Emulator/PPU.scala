@@ -55,7 +55,7 @@ class PPU {
     // TODO if necessary : To and from JSON
   }
   
-    /** The PaletteTable will contain two arraysa and one global variable:
+  /** The PaletteTable will contain two arrays and one global variable:
     * - curTable:
     *     Contains the used color palette. Can be either the default NES, NTSC or PAL.
     *
@@ -217,12 +217,32 @@ class PPU {
     }
 	
   }
-  
+
+  /** The Tile contains:
+    * - pix and opaque:
+    *     Array containing all the tile data and array containing the boolean value if a Tile is opaque or not
+    *
+    * - fbIndex, tIndex and palIndex
+    *	    The frame buffer (Tile index in buffer), tile Index in pix and palette Index to be used on that Tile.
+    *
+    * - w and h
+    *      Width and height of a tile
+    *
+    * - initialized
+    *      Boolean true if scan line was set.
+    *
+    * - tpri
+    *      Unknown for now
+    * 
+    * The Tile class will be used to render each tile in the buffer for the NES.
+    */
   private class Tile {
     // Tile data:
     var pix: Array[Int] = new Array(64)
     
+    // Frame buffer Index of a tile
     var fbIndex : Int = _
+    // Tile Index in pix
     var tIndex : Int = _
     var w : Int = _
     var h : Int = _
@@ -231,11 +251,13 @@ class PPU {
     var initialized : Boolean = false
     var opaque : Array[Boolean] = new Array(8);
   
+  /** Will create the scanline */
     def setBuffer(scanlineArray : Array[Int]): Unit = {
       var y : Int = 0
       for (y <- 1 to 8) setScanline(y, scanlineArray(y), scanlineArray(y+8))
     }
   
+    /** Sets the scanline, by initializing the pix data */
     def setScanline(sline: Int, b1: Int, b2: Int): Unit = {
       var initialized : Boolean = true
       var tIndex : Int = sline<<3
@@ -247,11 +269,22 @@ class PPU {
       }
     }
     
+    /** Looks if a tile is visible or not */
     def isTransparent(x: Int, y: Int): Boolean = pix((y << 3) + x) == 0
   
     /**
-      * 
-      * dx and dy = will be the first x and y coordinates of sprite data
+      * Renders the tile inside the buffer using different values and conditions.
+      *
+      * Variables are :
+      *   buffer : buffer.
+      *   srcx & srcy : size of the sprite, usually 8x8, so scr_1 = 0 and src_2 = 8
+      *   dx & dy : the first x and y coordinates of sprite data
+      *   palAdd : Upper two bits of color
+      *   palette :  shapes of tiles that make up backgrounds and sprites, palette data
+      *   flipHorizontal : Horizontal flip of a sprite
+      *   flipVertical : Vertical flip
+      *   pritable : Unknown
+      *   tpri : Unknown
       */
     def render(buffer: Array[Int], srcx1: Int, srcy1: Int, srcx2: Int, srcy2: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
       
@@ -265,7 +298,81 @@ class PPU {
       if (dy < 0) srcy1 -= dy
       if (dy + srcy2 >= 240) srcy2 = 240- dy
       
-      // TODO : The huge if - else if - else
+      fbIndex = (dy<<8) + dx
+      
+      if (!flipHorizontal && !flipVertical) { // Upright tile
+        tIndex = 0
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(x, y)
+            fbIndex++
+            tIndex++
+          }
+          // Not sure why he first take 8 then adds 256 ? Kept it as is for now
+          fbIndex -= 8
+          fbIndex += 256
+        }
+        
+      } else if (flipHorizontal && !flipVertical) { // Mirrored tile
+        tIndex = 7
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(x, y)
+            fbIndex++
+            tIndex--
+          }
+          fbIndex -= 8
+          fbIndex += 256
+          tIndex += 16
+        }
+        
+      } else if(flipVertical && !flipHorizontal) {  // Reflected tile
+        tIndex = 56
+      
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(x, y)
+            fbIndex++
+            tIndex++ 
+          }
+          fbIndex -= 8
+          fbIndex += 256
+          tIndex -= 16
+        }
+        
+      } else { // flipVertical && flipHorizontal. Inverted tile
+        tIndex = 63
+      
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(x, y)
+            fbIndex++
+            tIndex--
+          }
+          fbIndex -= 8
+          fbIndex += 256
+        }
+        
+      }
+      
+    }
+    
+    /** Helper function that actively renders tile to buffer. Used to not have duplicate code. */
+    def renderFunction(x: Int, y: Int): Unit = {
+      if (x >= srcx1 && x < srcx2 && y >= srcy1 && y < srcy2) {
+        palIndex = pix(tIndex)
+        tpri = priTable(fbIndex)
+        if (palIndex != 0 && pri <= tpri&0xFF) {
+          // Rendering tile to buffer
+          buffer(fbIndex) = palette(palIndex+palAdd)
+          tpri = (tpri&0xF00)|pri
+          priTable(fbIndex) = tpri
+        }
+      }
     }
   
     // TODO if necessary : To and from JSON
