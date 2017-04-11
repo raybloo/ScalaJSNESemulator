@@ -250,6 +250,11 @@ class PPU {
     var tpri : Int = _
     var initialized : Boolean = false
     var opaque : Array[Boolean] = new Array(8)
+    
+    var srcx1 : Int = _
+    var srcx2 : Int = _
+    var srcy1 : Int = _
+    var srcy2 : Int = _
   
   /** Will create the scanline */
     def setBuffer(scanlineArray : Array[Int]): Unit = {
@@ -287,10 +292,10 @@ class PPU {
       *   pri : Unknown
       */
     def render(buffer: Array[Int], srcx1v: Int, srcy1v: Int, srcx2v: Int, srcy2v: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
-      var srcx1 = srcx1v
-      var srcx2 = srcx2v
-      var srcy1 = srcy1v
-      var srcy2 = srcy2v
+      srcx1 = srcx1v
+      srcx2 = srcx2v
+      srcy1 = srcy1v
+      srcy2 = srcy2v
       
       if (dx < -7 || dx >= 256 || dy < -7 || dy >= 240) return
       
