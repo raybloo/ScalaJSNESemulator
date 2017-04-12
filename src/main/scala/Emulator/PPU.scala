@@ -314,7 +314,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(buffer, x, y, pri, priTable)
+            renderFunction(buffer, palette, x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
           }
@@ -328,7 +328,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(buffer, x, y, pri, priTable)
+            renderFunction(buffer, palette, x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1
           }
@@ -343,7 +343,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(buffer, x, y, pri, priTable)
+            renderFunction(buffer, palette, x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
           }
@@ -358,7 +358,7 @@ class PPU {
         for (y <- 1 to 8) {
           for (x <- 1 to 8) {
             // Code in if is the same everywhere. So I put it in a function
-            renderFunction(buffer, x, y, pri, priTable)
+            renderFunction(buffer, palette, x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1
           }
@@ -371,7 +371,7 @@ class PPU {
     }
     
     /** Helper function that actively renders tile to buffer. Used to not have duplicate code. */
-    def renderFunction(buffer: Array[Int], x: Int, y: Int, pri: Int, priTable: Array[Int]): Unit = {
+    def renderFunction(buffer: Array[Int], palette: Array[Int], x: Int, y: Int, pri: Int, priTable: Array[Int]): Unit = {
       if (x >= srcx1 && x < srcx2 && y >= srcy1 && y < srcy2) {
         palIndex = pix(tIndex)
         tpri = priTable(fbIndex)
