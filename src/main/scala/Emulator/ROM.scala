@@ -20,6 +20,7 @@ import scala.concurrent.Future
   */
 class ROM(nes: NES) {
 
+  //Mirroring types constants
   final val VerticalMirroring = 0
   final val HorizontalMirroring = 1
   final val FourscreenMirroring = 2
