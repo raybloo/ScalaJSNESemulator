@@ -20,6 +20,15 @@ import scala.concurrent.Future
   */
 class ROM(nes: NES) {
 
+  final val VerticalMirroring = 0
+  final val HorizontalMirroring = 1
+  final val FourscreenMirroring = 2
+  final val SinglescreenMirroring = 3
+  final val SinglescreenMirroring2 = 4
+  final val SinglescreenMirroring3 = 5
+  final val SinglescreenMirroring4 = 6
+  final val ChrRomMirroring = 7
+
   //ROM parts
   var fullRom: Array[Byte] = _
   var trainer: Array[Byte] = _
@@ -133,11 +142,11 @@ class ROM(nes: NES) {
   def getMirroringType: Int = {
     val flagByte = getHeader(6)
     if((flagByte & 8) != 0){
-      2
+      FourscreenMirroring
     } else if((flagByte & 1) != 0) {
-      1
+      VerticalMirroring
     } else {
-      0
+      HorizontalMirroring
     }
   }
 

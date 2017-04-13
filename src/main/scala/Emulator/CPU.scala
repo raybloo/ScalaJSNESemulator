@@ -64,8 +64,8 @@ class CPU(nes: NES) {
     }
 
     //Special Addresses
-    for (i <- 0 to 4) {
-      var i = p*0x800
+    for (p <- 0 to 3) {
+      val i = p*0x800
       memory(i+0x008) = -9//0xF7
       memory(i+0x009) = -17//0xEF
       memory(i+0x00A) = -33//0xDF
@@ -242,7 +242,7 @@ class CPU(nes: NES) {
 
     //Find the effective address
     var addr = 0
-    (addrMode: @ switch) match {
+    (addrMode: @switch) match {
       case OpData.ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
         addr = load1Word(opaddr+2)
       case OpData.RELATIVE => //Relative mode
