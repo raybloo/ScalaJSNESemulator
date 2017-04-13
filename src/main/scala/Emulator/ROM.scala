@@ -16,9 +16,19 @@ import scala.concurrent.Future
   *   it reads a file with an ajx request, performs some check on it
   *   and loads it into a byte array. It has functions that allow
   *   the program to access different part of this ROM and get its mapper
-  *   It is based on the rom.js class from Ben Fisherman's javascript nes emulator
+  *   It is based on the rom.js class from Ben Firsherman's javascript nes emulator
   */
 class ROM(nes: NES) {
+
+  //Mirroring types constants
+  final val VerticalMirroring = 0
+  final val HorizontalMirroring = 1
+  final val FourscreenMirroring = 2
+  final val SinglescreenMirroring = 3
+  final val SinglescreenMirroring2 = 4
+  final val SinglescreenMirroring3 = 5
+  final val SinglescreenMirroring4 = 6
+  final val ChrRomMirroring = 7
 
   //ROM parts
   var fullRom: Array[Byte] = _
@@ -126,18 +136,18 @@ class ROM(nes: NES) {
   }
 
   /** Returns the mirroring type as an `Int`.
-    *  - 0: horizontal mirroring
-    *  - 1: vertical mirroring
+    *  - 0: vertical mirroring
+    *  - 1: horizontal mirroring
     *  - 2: fourscreen mirroring
     */
   def getMirroringType: Int = {
     val flagByte = getHeader(6)
     if((flagByte & 8) != 0){
-      2
+      FourscreenMirroring
     } else if((flagByte & 1) != 0) {
-      1
+      VerticalMirroring
     } else {
-      0
+      HorizontalMirroring
     }
   }
 

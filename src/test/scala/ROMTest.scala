@@ -30,7 +30,7 @@ object ROMTest extends TestSuite {
         case _ =>
           assert(rom.checkRom)
           assert(rom.getMapperName == "Nintendo MMC5")
-          assert(rom.getMirroringType == 0) //Even if I believed it was vertical, it looks like this rom is horizontal
+          assert(rom.getMirroringType == rom.HorizontalMirroring) //Even if I believed it was vertical, it looks like this rom is horizontal
           assert(!rom.hasTrainer)
           assert(!rom.hasBatteryRam)
           assert(rom.getChrRomSize == 16) //128k
