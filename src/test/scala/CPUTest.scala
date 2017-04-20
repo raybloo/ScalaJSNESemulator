@@ -42,5 +42,24 @@ object CPUTest extends TestSuite {
       cpu.reset
       assert(cpu.getProcessorFlags == 0x34) //0b00110100
     }
+    'EmulateTest {
+      //ADC Absolute mode
+      cpu.reset
+      var addr = 0x0030
+      cpu.pc = 0x0001
+      cpu.write(cpu.pc+1,0x6D.toByte) //op
+      cpu.write(cpu.pc+2,addr.toByte) //addr
+      cpu.write(addr,2) //val
+      cpu.a = 2
+      //cpu.emulate
+      //assert(cpu.a == 4)
+      //BCC Relative Mode
+      cpu.reset
+      cpu.pc = 0x0001
+      cpu.write(cpu.pc+1,0x90.toByte) //op
+      cpu.write(cpu.pc+2,0x10.toByte) //val
+      //cpu.emulate
+      //assert(cpu.pc == 0x13)
+    }
   }
 }

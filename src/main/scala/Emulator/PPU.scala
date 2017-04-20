@@ -6,7 +6,7 @@ package Emulator
 class PPU {
 
 
-  var vramMem = null
+  var vramMem: Array[Byte] = null
   var spriteMem = null
   var vramAddress = null
   var vramTmpAddress = null

@@ -277,13 +277,13 @@ class Mapper(mapper_type: Int,nes: NES) {
   def loadPRGROM: Unit = {
     if (nes.rom.getPrgRomSize > 1) {
       // Load the two first banks into memory.
-      //TODO: loadRomBank(0, 0x8000)
-      //TODO: loadRomBank(1, 0xC000)
+      loadRomBank(0, 0x8000)
+      loadRomBank(1, 0xC000)
     }
     else {
       // Load the one bank into both memory locations:
-      //TODO: loadRomBank(0, 0x8000)
-      //TODO: loadRomBank(0, 0xC000)
+      loadRomBank(0, 0x8000)
+      loadRomBank(0, 0xC000)
     }
   }
 
@@ -318,6 +318,28 @@ class Mapper(mapper_type: Int,nes: NES) {
       }
       */
     } //I'll need more time to implement this, since I don't quite understand this
+  }
+
+  def loadRomBank(bank: Int, address: Int): Unit =  { //16KB banks
+    // Loads a ROM bank into the specified address.
+    //var data = this.nes.rom.rom[bank];
+    //cpuMem.write(address,data,data.length);
+    nes.rom.prgRom(bank % nes.rom.getPrgRomSize).copyToArray(nes.cpu.memory,address,0x4000)
+  }
+
+  def load4KVromBank(halfBank: Int, address: Int): Unit = {
+    if (nes.rom.getChrRomSize != 0) {
+      //TODO: nes.ppu.triggerRendering
+      if(halfBank % 2 == 0) {
+        nes.rom.chrRom((halfBank/2) % nes.rom.getChrRomSize).take(0x1000).copyToArray(nes.ppu.vramMem,address,0x1000)
+      } else {
+        nes.rom.chrRom((halfBank/2) % nes.rom.getChrRomSize).drop(0x1000).copyToArray(nes.ppu.vramMem,address,0x1000)
+      }
+
+      //TODO
+      //var vromTile = nes.rom.vromTile(halfBank % nes.rom.getChrRomSize)
+      //JSNES.Utils.copyArrayElements(vromTile, 0, this.nes.ppu.ptTile, address >> 4, 256);
+    }
   }
 
 }

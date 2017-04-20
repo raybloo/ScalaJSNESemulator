@@ -33,8 +33,9 @@ class ROM(nes: NES) {
   //ROM parts
   var fullRom: Array[Byte] = _
   var trainer: Array[Byte] = _
-  var prgRom: Array[Byte] = _
-  var chrRom: Array[Byte] = _
+  var prgRom: Array[Array[Byte]] = _
+  var chrRom: Array[Array[Byte]] = _
+  var vromTile: Array[Array[Byte]] = _
   var PCPRom: Array[Byte] = _ //unimplemented yet
   var PCINSTRom: Array[Byte] = _ //unimplemented yet
 
@@ -95,23 +96,39 @@ class ROM(nes: NES) {
     }
   }
 
-  /** Returns the prgRom of the rom in the form of a byte array */
-  def getPrgRom: Array[Byte] = {
-    val size = getPrgRomSize
-    if(hasTrainer) {
-      fullRom.slice(528,528+(16384*size))
-    } else {
-      fullRom.slice(16,16+(16384*size))
+  /** Returns the prgRom of the rom in the form of an array of byte arrays */
+  def getPrgRom: Array[Array[Byte]] = {
+    prgRom = new Array(getPrgRomSize)
+    var offset = 16 + (if(hasTrainer) 512 else 0)
+    for (i <- 0 to getPrgRomSize) {
+      prgRom(i) = new Array(0x4000)
+      if(offset + 0x4000 <= fullRom.length) {
+        fullRom.slice(offset, offset + 0x4000)
+      }
+      offset += 0x4000
     }
+    prgRom
   }
 
   /** Returns the chrRom of the rom in the form of a byte array */
-  def getChrRom: Array[Byte] = {
-    var offset = 16
-    val size = getChrRomSize
-    if(hasTrainer) offset += 512
-    offset += 16384*((getHeader(4).toInt + 256) % 256)
-    fullRom.slice(offset,offset+(8196*size))
+  def getChrRom: Array[Array[Byte]] = {
+    chrRom = new Array(getChrRomSize)
+    var offset = 16 + (if(hasTrainer) 512 else 0)
+    offset += 0x4000*((getHeader(4).toInt + 0x100) % 0x100)
+    for (i <- 0 to getChrRomSize) {
+      chrRom(i) = new Array(0x2000)
+      if(offset + 0x2000 <= fullRom.length) {
+        fullRom.slice(offset, offset + 0x2000)
+      }
+      offset += 0x2000
+    }
+    chrRom
+  }
+
+  /** Return and initialize vromtiles */
+  def getVromTiles: Array[Array[Byte]] = {
+    //TODO
+    vromTile
   }
 
   /** Returns true when the rom has battery ram */
@@ -127,12 +144,12 @@ class ROM(nes: NES) {
   /** Returns the size in 16KB of the prgrom */
   def getPrgRomSize: Int = {
     // Scala Bytes are signed, but we want it unsigned, so we ll be using the modulo operator
-    (getHeader(4).toInt + 256) % 256 // conversion from signed to unsigned
+    (getHeader(4).toInt + 0x100) % 0x100 // conversion from signed to unsigned
   }
 
   /** Returns the size in 8KB of the chrrom */
   def getChrRomSize: Int = {
-    (getHeader(5).toInt + 256) % 256 // conversion from signed to unsigned
+    (getHeader(5).toInt + 0x100) % 0x100 // conversion from signed to unsigned
   }
 
   /** Returns the mirroring type as an `Int`.
