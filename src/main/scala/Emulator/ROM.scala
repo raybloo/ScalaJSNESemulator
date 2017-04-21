@@ -35,7 +35,7 @@ class ROM(nes: NES) {
   var trainer: Array[Byte] = _
   var prgRom: Array[Array[Byte]] = _
   var chrRom: Array[Array[Byte]] = _
-  var vromTile: Array[Array[Byte]] = _
+  var vromTile: Array[Array[Tile]] = _
   var PCPRom: Array[Byte] = _ //unimplemented yet
   var PCINSTRom: Array[Byte] = _ //unimplemented yet
 
@@ -126,8 +126,14 @@ class ROM(nes: NES) {
   }
 
   /** Return and initialize vromtiles */
-  def getVromTiles: Array[Array[Byte]] = {
-    //TODO
+  def getVromTiles: Array[Array[Tile]] = {
+    vromTile = new Array(getChrRomSize*2) // 2 tiles per 8k rom bank (1 per 4k bank)
+    for (i <- 0 to (getChrRomSize*2)) {
+      vromTile(i) = new Array(0x100)
+      for (j <- 0 to 100) {
+        vromTile(i)(j) = new Tile
+      }
+    }
     vromTile
   }
 
@@ -214,7 +220,7 @@ class ROM(nes: NES) {
           trainer = getTrainer
           prgRom = getPrgRom
           chrRom = getChrRom
-          //TODO make tiles for the PPU
+          vromTile = getVromTiles
 
         } else {
           Dynamic.global.console.log("File is not a valid ROM")
