@@ -468,11 +468,11 @@ class PPU {
     
   }
   
-  def setMirroring: Unit = {
+  def setMirroring(mirroring: Int): Unit = {
 
   }
   
-  def defineMirrorRegion: Unit = {
+  def defineMirrorRegion(fromStart: Int, toStart: Int, size: Int): Unit = {
 
   }
 
@@ -492,18 +492,130 @@ class PPU {
 
   }
   
-  def updateControlReg1: Unit = {
+  def updateControlReg1(value: Int): Unit = {
 
   }
   
-  def updateControlReg2: Unit = {
+  def updateControlReg2(value: Int): Unit = {
 
   }
 
-  def setStatusFlag(flag: Int,value: Boolean): Unit = {
+  def setStatusFlag(flag: Int, value: Boolean): Unit = {
 
   }
   
-  // TODO : A lot of other functions
+  def readStatusRegister: Unit = {
+
+  }
+  
+  def writeSRAMAddress(address: Int): Unit = {
+
+  }
+  
+  def sramLoad: Unit = {
+
+  }
+  
+  def sramWrite(value: Int): Unit = {
+
+  }
+  
+  def scrollWrite(value: Int): Unit = {
+
+  }
+  
+  def writeVRAMAddress(address: Int): Unit = {
+
+  }
+  
+  def vramLoad: Unit = {
+
+  }
+  
+  def vramWrite(value: Int): Unit = {
+
+  }
+  
+  def sramDMA(value: Int): Unit = {
+
+  }
+  
+  def regsFromAddress: Unit = {
+
+  }
+  
+  def cntsFromAddress: Unit = {
+
+  }
+  
+  def regsToAddress: Unit = {
+
+  }
+  
+  def cntsToAddress: Unit = {
+
+  }
+  
+  def incTileCounter(count: Int): Unit = {
+
+  }
+  
+  def mirroredLoad(address: Int): Unit = {
+
+  }
+  
+  def mirroredWrite(address: Int, value: Int): Unit = {
+
+  }
+  
+  def triggerRendering: Unit = {
+
+  }
+  
+  def renderFramePartially(startScan: Int, scanCount: Int): Unit = {
+
+  }
+  
+  def renderBgScanline(pbgbuffer: Boolean, scan: Int): Unit = {
+
+  }
+  
+  def renderSpritesPartially(startScan: Int, scanCount: Int, bgPri: Int): Unit = {
+
+  }
+  
+  def checkSprite0(scan: Int): Unit = {
+
+  }
+  
+  def writeMem(address: Int, value: Int): Unit = {
+
+  }
+  
+  def updatePalettes: Unit = {
+
+  }
+  
+  def patternWrite(address: Int, value: Int): Unit = {
+
+  }
+  
+  def nameTableWrite(index: Int, address: Int, value: Int): Unit = {
+
+  }
+  
+  def attribTableWrite(index: Int, address: Int, value: Int): Unit = {
+
+  }
+  
+  def spriteRamWriteUpdate(address: Int, value: Int): Unit = {
+
+  }
+  
+  def doNMI: Unit = {
+
+  }
+  
+  // TODO if needed to and from JSON
 
 }
