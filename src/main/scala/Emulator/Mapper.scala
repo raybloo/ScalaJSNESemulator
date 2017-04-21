@@ -332,13 +332,13 @@ class Mapper(mapper_type: Int,nes: NES) {
   }
 
   /** Load 2 program rom banks of a total of 32KB */
-  def load32kRomBank(bank: Int, address: Int) {
+  def load32kRomBank(bank: Int, address: Int): Unit = {
     loadRomBank((bank*2) % nes.rom.getPrgRomSize, address)
     loadRomBank((bank*2+1) % nes.rom.getPrgRomSize, address+0x4000)
   }
 
   /** Load 1/2 program rom bank of 8KB */
-  def load8kRomBank(halfBank: Int, address: Int) {
+  def load8kRomBank(halfBank: Int, address: Int): Unit = {
     if(halfBank % 2 == 0) {
       nes.rom.prgRom((halfBank/2) % nes.rom.getPrgRomSize).take(0x2000).copyToArray(nes.cpu.memory,address,0x2000)
     } else {
@@ -350,7 +350,7 @@ class Mapper(mapper_type: Int,nes: NES) {
     * the graphic bank is broken in 2 and loaded in 2 tiles
     * the first parameter is the number of the first half bank (4KB)
     */
-  def loadVromBank(halfBank: Int, address: Int) { //default: 8KB banks
+  def loadVromBank(halfBank: Int, address: Int): Unit = { //default: 8KB banks
     if (nes.rom.getChrRomSize != 0) {
       //TODO or not: nes.ppu.triggerRendering
       load4KVromBank((halfBank) % (nes.rom.getChrRomSize*2), address) //the size of our tiles are 4K (0x1000)
@@ -374,7 +374,7 @@ class Mapper(mapper_type: Int,nes: NES) {
   }
 
   /** Load 1/4 graphic rom bank of 2KB and update corresponding tile */
-  def load2kVromBank(quarterBank: Int, address: Int) {
+  def load2kVromBank(quarterBank: Int, address: Int): Unit = {
     if (nes.rom.getChrRomSize != 0) {
       //TODO: nes.ppu.triggerRendering
       val offset = 0x800 * (quarterBank % 4)
@@ -389,7 +389,7 @@ class Mapper(mapper_type: Int,nes: NES) {
   }
 
   /** Load 1/8 graphic rom bank of 1KB and update corresponding tile */
-  def load1kVromBank(eighthBank: Int, address: Int) {
+  def load1kVromBank(eighthBank: Int, address: Int): Unit = {
     if (nes.rom.getChrRomSize != 0) {
       //TODO: nes.ppu.triggerRendering
       val offset = 0x400 * (eighthBank % 8)
@@ -401,6 +401,14 @@ class Mapper(mapper_type: Int,nes: NES) {
         nes.ppu.ptTile(baseIndex+i) = vromTile( ((eighthBank%4) << 6) + i)
       }
     }
+  }
+
+  def clockIrqCounter: Unit = {
+    // Does nothing. This is used by the MMC3 mapper.
+  }
+
+  def latchAccess(address: Int): Unit = {
+    // Does nothing. This is used by MMC2.
   }
 
 
