@@ -333,8 +333,8 @@ class Mapper(mapper_type: Int,nes: NES) {
 
   /** Load 2 program rom banks of a total of 32KB */
   def load32kRomBank(bank: Int, address: Int) {
-    this.loadRomBank((bank*2) % nes.rom.getPrgRomSize, address)
-    this.loadRomBank((bank*2+1) % nes.rom.getPrgRomSize, address+0x4000)
+    loadRomBank((bank*2) % nes.rom.getPrgRomSize, address)
+    loadRomBank((bank*2+1) % nes.rom.getPrgRomSize, address+0x4000)
   }
 
   /** Load 1/2 program rom bank of 8KB */
@@ -395,7 +395,7 @@ class Mapper(mapper_type: Int,nes: NES) {
       val offset = 0x400 * (eighthBank % 8)
       nes.rom.chrRom((eighthBank/8) % nes.rom.getChrRomSize).slice(offset,offset+0x400).copyToArray(nes.ppu.vramMem,address,0x400)
       // Update tiles:
-      val vromTile: Array[Tile] = nes.rom.vromTile((eighthBank/8) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
+      val vromTile: Array[Tile] = nes.rom.vromTile((eighthBank/4) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
       val baseIndex = address >> 4
       for(i <- 0 to 0x40) {
         nes.ppu.ptTile(baseIndex+i) = vromTile( ((eighthBank%4) << 6) + i)
