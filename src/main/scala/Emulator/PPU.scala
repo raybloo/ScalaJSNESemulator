@@ -426,7 +426,7 @@ class PPU {
   var regS = null
   var curNt = null
   var attrib = null
-  var buffer = null
+  var buffer: Array[Int] = null
   var prevBuffer = null
   var bgbuffer = null
   var pixrendered = null

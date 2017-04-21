@@ -1,26 +1,34 @@
 package Emulator
 
-
-import java.nio.ByteBuffer
-
 import scala.language.dynamics
 import scala.scalajs.js
 import js.typedarray.ArrayBuffer
-import js.Dynamic
+import js.{Dynamic, timers}
 import js.typedarray.TypedArrayBuffer.wrap
 import org.scalajs.jquery.{JQueryAjaxSettings, JQueryXHR, jQuery}
 import org.scalajs.dom.ext.Ajax
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /** class ROM
   *   this class represents the nes cartridge (Read Only Memory)
   *   it reads a file with an ajx request, performs some check on it
   *   and loads it into a byte array. It has functions that allow
   *   the program to access different part of this ROM and get its mapper
-  *   It is based on the rom.js class from Ben Fisherman's javascript nes emulator
+  *   It is based on the rom.js class from Ben Firsherman's javascript nes emulator
   */
-class ROM {
+class ROM(nes: NES) {
+
+  //Mirroring types constants
+  final val VerticalMirroring = 0
+  final val HorizontalMirroring = 1
+  final val FourscreenMirroring = 2
+  final val SinglescreenMirroring = 3
+  final val SinglescreenMirroring2 = 4
+  final val SinglescreenMirroring3 = 5
+  final val SinglescreenMirroring4 = 6
+  final val ChrRomMirroring = 7
 
   //ROM parts
   var fullRom: Array[Byte] = _
@@ -73,12 +81,12 @@ class ROM {
   mapperName(91) = "Pirate HK-SF3 chip"
 
 
-  /**Returns the header of the rom in the form of a byte array */
+  /** Returns the header of the rom in the form of a byte array */
   def getHeader: Array[Byte] = {
     fullRom.slice(0,16)
   }
 
-  /**Returns the trainer, if has one, of the rom in the form of a byte array */
+  /** Returns the trainer, if has one, of the rom in the form of a byte array */
   def getTrainer: Array[Byte] = {
     if(hasTrainer) {
       fullRom.slice(16,528)
@@ -87,7 +95,7 @@ class ROM {
     }
   }
 
-  /**Returns the prgRom of the rom in the form of a byte array */
+  /** Returns the prgRom of the rom in the form of a byte array */
   def getPrgRom: Array[Byte] = {
     val size = getPrgRomSize
     if(hasTrainer) {
@@ -97,7 +105,7 @@ class ROM {
     }
   }
 
-  /**Returns the chrRom of the rom in the form of a byte array */
+  /** Returns the chrRom of the rom in the form of a byte array */
   def getChrRom: Array[Byte] = {
     var offset = 16
     val size = getChrRomSize
@@ -106,60 +114,65 @@ class ROM {
     fullRom.slice(offset,offset+(8196*size))
   }
 
-  /**Returns true when the rom has the 512 bytes of trainer before the prgrom */
+  /** Returns true when the rom has battery ram */
+  def hasBatteryRam: Boolean = {
+    (getHeader(6) & 2) != 0
+  }
+
+  /** Returns true when the rom has the 512 bytes of trainer before the prgrom */
   def hasTrainer: Boolean = {
     (getHeader(6) & 4) != 0
   }
 
-  /**Returns the size in 16KB of the prgrom */
+  /** Returns the size in 16KB of the prgrom */
   def getPrgRomSize: Int = {
     // Scala Bytes are signed, but we want it unsigned, so we ll be using the modulo operator
     (getHeader(4).toInt + 256) % 256 // conversion from signed to unsigned
   }
 
-  /**Returns the size in 8KB of the chrrom */
+  /** Returns the size in 8KB of the chrrom */
   def getChrRomSize: Int = {
     (getHeader(5).toInt + 256) % 256 // conversion from signed to unsigned
   }
 
   /** Returns the mirroring type as an `Int`.
-    *  - 0: horizontal mirroring
-    *  - 1: vertical mirroring
+    *  - 0: vertical mirroring
+    *  - 1: horizontal mirroring
     *  - 2: fourscreen mirroring
     */
   def getMirroringType: Int = {
     val flagByte = getHeader(6)
     if((flagByte & 8) != 0){
-      2
+      FourscreenMirroring
     } else if((flagByte & 1) != 0) {
-      1
+      VerticalMirroring
     } else {
-      0
+      HorizontalMirroring
     }
   }
 
-  /**Returns the mapper type in the form of an integer */
+  /** Returns the mapper type in the form of an integer */
   def getMapperNum: Int = {
     (getHeader(6) >> 4) | (getHeader(7) & 240) //0xF0
   }
 
-  /**Returns true if the mapper is supported */
+  /** Returns true if the mapper is supported */
   def isMapperSupported(num: Int): Boolean = {
     num >= 0 && num < mapperName.length && mapperName(num) != "Unknown Mapper"
   }
 
-  /**Performs a check on the mapper number validity and return a newly created mapper of the mapper class */
+  /** Performs a check on the mapper number validity and return a newly created mapper of the mapper class */
   def createMapper: Mapper = {
     val num = getMapperNum
     if(isMapperSupported(num)) {
-      new Mapper(num)
+      new Mapper(num,nes)
     } else {
       Dynamic.global.console.log(s"Unsupported mapper, $num")
       null
     }
   }
 
-  /**Returns the name of the mapper */
+  /** Returns the name of the mapper */
   def getMapperName: String = {
     val num = getMapperNum
     if(isMapperSupported(num)) {
@@ -169,12 +182,12 @@ class ROM {
     }
   }
 
-  /**Loads the requested rom into an array of byte, while performing some checks on the header */
-  def openRom(url: String): Unit = {
+  /** Loads the requested rom into an array of byte, while performing some checks on the header */
+  def openRom(url: String): Future[Any] = {
 
     //ajax request to get the ROM in a byte array format
     val ajaxReq = Ajax.get(url, null, 0, Map.empty, false, "arraybuffer")
-    ajaxReq.onSuccess {
+    val ret: Future[Any] = ajaxReq.map {
       case xhr =>
         val byteBuffer = wrap( xhr.response.asInstanceOf[ArrayBuffer] )
         fullRom = new Array(byteBuffer.capacity())
@@ -196,10 +209,11 @@ class ROM {
         Dynamic.global.console.log(s"Failed to load ROM at $url")
         e.printStackTrace()
     }
+    ret
 
   }
 
-  /**Checks if the fullROM meets the .nes header requirement */
+  /** Checks if the fullROM meets the .nes header requirement */
   def checkRom: Boolean = {
     if(fullRom != null) {
       val header = getHeader

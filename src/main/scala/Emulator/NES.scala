@@ -9,14 +9,16 @@ import scala.scalajs.js.timers.SetIntervalHandle
   */
 class NES() {
   // Init. all instances and state variables used for the emulator
-  private var cpu: CPU = new CPU(this)
-  private var ppu: PPU = new PPU
-  private var papu: PAPU = new PAPU
-  var rom: ROM = null // rom will be used by other compenents therefore it is not private
   private val ui: UI = new UI
-  private var keyboard = null //I'll see later how to implement this one
-  private var mmap: Mapper = null
   private var program: Program = null
+
+  // Init. accessible components
+  var cpu: CPU = new CPU(this)
+  var rom: ROM = null
+  var keyboard: Keyboard = null //I'll see later how to implement this one
+  var mmap: Mapper = null
+  var ppu: PPU = new PPU
+  var papu: PAPU = new PAPU
 
   // Init. all default emulator value
   private var frameRate: Double = 60.0
@@ -54,6 +56,7 @@ class NES() {
     }
   }
 
+  /** Simulates one frame of the nes*/
   def frame: Unit = {
     var cycles: Int = 0
     var stop: Boolean = false
@@ -62,7 +65,7 @@ class NES() {
     while(!stop) {
       if (cpu.cyclesToHalt == 0) {
         // Execute a CPU instruction
-        cycles = cpu.emulateCycle()
+        cycles = cpu.emulate()
         if(emulateSound) {
           //TODO implement when papu is functionnal
         }
@@ -138,7 +141,7 @@ class NES() {
     }
     ui.updateStatus("Loading ROM...")
     // Load ROM file:
-    rom = new ROM
+    rom = new ROM(this)
     rom.openRom(romUrl)
     if(rom.checkRom) {
       reset
@@ -146,7 +149,7 @@ class NES() {
       if (mmap == null) {
         false
       } else {
-        mmap.loadROM();
+        mmap.loadROM
         //ppu.setMirroring(rom.getMirroringType)
         oldRomUrl = romUrl
         ui.updateStatus("Successfully loaded. Ready to be started.")
@@ -161,7 +164,7 @@ class NES() {
 
   def reloadRom: Unit = {
     if (oldRomUrl != null) {
-      this.loadRom(oldRomUrl);
+      this.loadRom(oldRomUrl)
     }
   }
 

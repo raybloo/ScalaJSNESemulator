@@ -9,6 +9,6 @@ class Program(nes: NES) {
 
   }
   def getPrgRom(): ROM = {
-    new ROM()
+    new ROM(nes)
   }
 }
