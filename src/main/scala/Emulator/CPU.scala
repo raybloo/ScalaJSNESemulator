@@ -657,6 +657,11 @@ class CPU(nes: NES) {
     sp = 0x0100 | (sp&0xff)
   }
 
+  /* Increment the number of cycle to halt */
+  def haltCycles(cycles: Int): Unit = {
+    cyclesToHalt += cycles
+  }
+
   /** Contains all the data about the opcode in 4 arrays
     * every instruction has its own:
     *   - number of instruction (for our switch)
