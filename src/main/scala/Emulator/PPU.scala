@@ -784,7 +784,7 @@ class PPU(nes: NES) {
             bgColor = 0x00000
       }
     }
-    for (i <- 1 to 256*240;) buffer(i) = bgColor
+    for (i <- 1 to 256*240) buffer(i) = bgColor
     for (i <- 1 to pixrendered.length) pixrendered(i) = 65
   }
   
@@ -1141,7 +1141,7 @@ class PPU(nes: NES) {
       var ei : Int = (startScan+scanCount)<<8
       if (ei > 0xF000) ei = 0xF000
 
-      for (destIndex <- si to ei) if (pixrendered[destIndex] > 0xFF) buffer(destIndex) = bgbuffer(destIndex)
+      for (destIndex <- si to ei) if (pixrendered(destIndex) > 0xFF) buffer(destIndex) = bgbuffer(destIndex)
     }
 
     if (f_spVisibility == 1) renderSpritesPartially(startScan, scanCount, false)
@@ -1300,8 +1300,8 @@ class PPU(nes: NES) {
     var t : Int = _
     var bufferIndex : Int = _
         
-    var x :Int = sprX[0]
-    var y : Int = sprY[0] + 1
+    var x :Int = sprX(0)
+    var y : Int = sprY(0) + 1
         
     if (f_spriteSize == 0) { // 8x8 sprites.
       // Check range:
@@ -1404,7 +1404,7 @@ class PPU(nes: NES) {
 
     // Update internally buffered data:
     if (address < 0x2000) {
-      vramMem[address] = value
+      vramMem(address) = value
       patternWrite(address,value)
     } else if (address >= 0x2000 && address < 0x23c0) {    
       nameTableWrite(ntable1(0), address - 0x2000, value)
