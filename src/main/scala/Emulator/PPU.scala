@@ -586,8 +586,8 @@ class PPU(nes: NES) {
     triggerRendering()
     
     // Remove mirroring:
-    if (vramMirrorTable === null) vramMirrorTable = new Array(0x8000)
-    for (var i <- 1 to 0x8000) vramMirrorTable(i) = i
+    if (vramMirrorTable == null) vramMirrorTable = new Array(0x8000)
+    for (i <- 1 to 0x8000) vramMirrorTable(i) = i
     
     // Palette mirroring:
     defineMirrorRegion(0x3f20,0x3f00,0x20)
