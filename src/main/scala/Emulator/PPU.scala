@@ -319,7 +319,6 @@ class PPU(nes: NES) {
             fbIndex += 1
             tIndex += 1
           }
-          // Not sure why he first take 8 then adds 256 ? Kept it as is for now
           fbIndex -= 8
           fbIndex += 256
         }
@@ -737,7 +736,7 @@ class PPU(nes: NES) {
             
             // Check for sprite 0 (next scanline):
             if (!hitSpr0 && f_spVisibility == 1) {
-              if (sprX(0) >= -7 && sprX(0) < 256 && (sprY(0) + 1) <= (scanline - 20) && (sprY(0) + 1 + (f_spriteSize == 0 ? 8 : 16)) >= (scanline - 20)) {
+              if (sprX(0) >= -7 && sprX(0) < 256 && (sprY(0) + 1) <= (scanline - 20) && (sprY(0) + 1 + (if (f_spriteSize == 0) 8 else 16)) >= (scanline - 20)) {
                 if (checkSprite0(scanline - 20)) {
                   hitSpr0 = true
                 }
@@ -860,7 +859,7 @@ class PPU(nes: NES) {
 
   def setStatusFlag(flag: Int, value: Boolean): Unit = {
     var n = 1<<flag
-    nes.cpu.memory(0x2002) = (nes.cpu.memory (0x2002) & (255-n)) | (value?n:0)
+    nes.cpu.memory(0x2002) = (nes.cpu.memory (0x2002) & (255-n)) | (if (value) n else 0)
   }
   
   /** CPU Register $2002: Read the Status Register. */
@@ -959,7 +958,7 @@ class PPU(nes: NES) {
       if (vramAddress < 0x2000) nes.mmap.latchAccess(vramAddress)
 
       // Increment by either 1 or 32, depending on d2 of Control Register 1:
-      vramAddress += (f_addrInc == 1 ? 32 : 1)
+      vramAddress += (if (f_addrInc == 1) 32 else 1)
 
       cntsFromAddress()
       regsFromAddress()
@@ -971,7 +970,7 @@ class PPU(nes: NES) {
     tmp = mirroredLoad(vramAddress)
 
     // Increment by either 1 or 32, depending on d2 of Control Register 1:
-    vramAddress += (f_addrInc == 1 ? 32 : 1)
+    vramAddress += (if (f_addrInc == 1) 32 else 1)
 
     cntsFromAddress()
     regsFromAddress()
@@ -997,7 +996,7 @@ class PPU(nes: NES) {
     }
 
     // Increment by either 1 or 32, depending on d2 of Control Register 1:
-    vramAddress += (f_addrInc == 1 ? 32 : 1)
+    vramAddress += (if (f_addrInc == 1) 32 else 1)
     regsFromAddress()
     cntsFromAddress()
   }
@@ -1152,7 +1151,7 @@ class PPU(nes: NES) {
   
   /** Renders the tile data for a given scanline */
   def renderBgScanline(pbgbuffer: Boolean, scan: Int): Unit = {
-    var baseTile : Int = (regS == 0 ? 0 : 256)
+    var baseTile : Int = (if (regS == 0) 0 else 256)
     var destIndex : Int = (scan<<8) - regFH
     
     curNt = ntable1(cntV + cntV + cntH)
@@ -1162,7 +1161,7 @@ class PPU(nes: NES) {
         
     if (scan < 240 && (scan - cntFV) >= 0) {
       var tscanoffset : Int = this.cntFV<<3
-      var targetBuffer : Int = bgbuffer ? bgbuffer : buffer
+      var targetBuffer : Int = if (bgbuffer) bgbuffer else buffer
       
       var t, tpix, att, col
       
@@ -1276,7 +1275,7 @@ class PPU(nes: NES) {
             if (sprY(i) < startscan) srcy1 = startscan - sprY(i) - 1
             if (sprY(i)+8 > startscan + scancount) srcy2 = startscan + scancount - sprY(i)
 
-            ptTile(top + (vertFlip(i) ? 1 : 0)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i)+1, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
+            ptTile(top + (if (vertFlip(i)) 1 else 0)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i)+1, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
 
             srcy1 = 0
             srcy2 = 8
@@ -1284,7 +1283,7 @@ class PPU(nes: NES) {
             if (sprY(i)+8 < startscan) srcy1 = startscan - (sprY(i) + 8 + 1)
             if (sprY(i)+16 > startscan + scancount) srcy2 = startscan + scancount - (sprY(i)+8)
             
-            ptTile(top + (vertFlip(i) ? 0 : 1)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i) + 1 + 8, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
+            ptTile(top + (if (vertFlip(i)) 0 else 1)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i) + 1 + 8, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
           }
         }
       }
@@ -1297,7 +1296,7 @@ class PPU(nes: NES) {
     spr0HitY = -1
     
     var toffset : Int = _
-    var tIndexAdd : Int = (f_spPatternTable == 0 ? 0 : 256)
+    var tIndexAdd : Int = (if (f_spPatternTable == 0) 0 else 256)
     var t : Int = _
     var bufferIndex : Int = _
         
@@ -1354,9 +1353,9 @@ class PPU(nes: NES) {
         else toffset = scan-y
 
         if (toffset < 8) { // first half of sprite.
-          t = ptTile(sprTile(0) + (vertFlip(0) ? 1 : 0) + ((sprTile(0)&1) != 0 ? 255 : 0))
+          t = ptTile(sprTile(0) + (if (vertFlip(0)) 1 else 0) + (if ((sprTile(0)&1) != 0) 255 else 0))
         } else { // second half of sprite.
-          t = ptTile(sprTile(0) + (vertFlip(0) ? 0 : 1) + ((sprTile(0)&1) != 0 ? 255 : 0))
+          t = ptTile(sprTile(0) + (if (vertFlip(0)) 0 else 1) + (if ((sprTile(0)&1) != 0) 0 else 255)
           if (vertFlip(0)) toffset = 15 - toffset
           else toffset -= 8
         }
