@@ -725,7 +725,7 @@ class PPU(nes: NES) {
         
           // Render normally:
           if (f_bgVisibility == 1) {
-            if (!this.scanlineAlreadyRendered) {
+            if (!scanlineAlreadyRendered) {
               // update scroll:
               cntHT = regHT
               cntH = regH
@@ -816,7 +816,7 @@ class PPU(nes: NES) {
     if (clipToTvSize) for (y <- 1 to 240; x <- 1 to 8) buffer((y<<8)+255-x) = 0
         
     // Clip top and bottom 8 pixels:
-    if (this.clipToTvSize) {
+    if (clipToTvSize) {
       for (y <- 1 to 8; x <- 1 to 256) {
         buffer((y<<8)+x) = 0
         buffer(((239-y)<<8)+x) = 0
@@ -864,13 +864,13 @@ class PPU(nes: NES) {
   
   /** CPU Register $2002: Read the Status Register. */
   def readStatusRegister: Byte = {
-    var tmp : Byte = this.nes.cpu.memory(0x2002)
+    var tmp : Byte = nes.cpu.memory(0x2002)
 
     // Reset scroll & VRAM Address toggle:
     firstWrite = true
 
     // Clear VBlank flag:
-    setStatusFlag(this.StatusVBlank, false)
+    setStatusFlag(StatusVBlank, false)
 
     // Fetch status data:
     return tmp
@@ -917,19 +917,19 @@ class PPU(nes: NES) {
     } else {
       triggerRendering()
       
-      regVT = (this.regVT&24) | ((address>>5)&7)
+      regVT = (regVT&24) | ((address>>5)&7)
       regHT = address&31
             
-      cntFV = this.regFV
-      cntV = this.regV
-      cntH = this.regH
-      cntVT = this.regVT
-      cntHT = this.regHT
+      cntFV = regFV
+      cntV = regV
+      cntH = regH
+      cntVT = regVT
+      cntHT = regHT
             
-      checkSprite0(this.scanline-20)
+      checkSprite0(scanline-20)
     }
 
-    firstWrite = !this.firstWrite;
+    firstWrite = !firstWrite;
 
     // Invoke mapper latch:
     cntsToAddress()
@@ -1007,7 +1007,7 @@ class PPU(nes: NES) {
     var data : Int = _
     
     for (i <- sramAddress to 256) {
-      data = this.nes.cpu.mem(baseAddress+i)
+      data = nes.cpu.mem(baseAddress+i)
       spriteMem(i) = data
       spriteRamWriteUpdate(i, data)
     }
@@ -1045,7 +1045,7 @@ class PPU(nes: NES) {
   
   /* Updates the VRAM address from the scroll registers. */
   def regsToAddress: Unit = {
-    var b1 : Int = (this.regFV&7)<<4
+    var b1 : Int = (regFV&7)<<4
     b1 |= (regV&1)<<3
     b1 |= (regH&1)<<2
     b1 |= (regVT>>3)&3
@@ -1160,7 +1160,7 @@ class PPU(nes: NES) {
     curNt = ntable1(cntV + cntV + cntH)
         
     if (scan < 240 && (scan - cntFV) >= 0) {
-      var tscanoffset : Int = this.cntFV<<3
+      var tscanoffset : Int = cntFV<<3
       var targetBuffer : Int = if (bgbuffer) bgbuffer else buffer
       
       var t, tpix, att, col
