@@ -1163,7 +1163,7 @@ class PPU(nes: NES) {
       var tscanoffset : Int = cntFV<<3
       var targetBuffer : Int = if (bgbuffer) bgbuffer else buffer
       
-      var t, tpix, att, col
+      var t, tpix, att, col : Int = _
       
       for (tile <- 0 to 32) {
         if (scan >= 0) {
@@ -1355,7 +1355,7 @@ class PPU(nes: NES) {
         if (toffset < 8) { // first half of sprite.
           t = ptTile(sprTile(0) + (if (vertFlip(0)) 1 else 0) + (if ((sprTile(0)&1) != 0) 255 else 0))
         } else { // second half of sprite.
-          t = ptTile(sprTile(0) + (if (vertFlip(0)) 0 else 1) + (if ((sprTile(0)&1) != 0) 0 else 255)
+          t = ptTile(sprTile(0) + (if (vertFlip(0)) 0 else 1) + (if ((sprTile(0)&1) != 0) 0 else 255))
           if (vertFlip(0)) toffset = 15 - toffset
           else toffset -= 8
         }
