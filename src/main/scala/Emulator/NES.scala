@@ -17,7 +17,7 @@ class NES() {
   var rom: ROM = null
   var keyboard: Keyboard = null //I'll see later how to implement this one
   var mmap: Mapper = null
-  var ppu: PPU = new PPU
+  var ppu: PPU = new PPU(this)
   var papu: PAPU = new PAPU
 
   // Init. all default emulator value
