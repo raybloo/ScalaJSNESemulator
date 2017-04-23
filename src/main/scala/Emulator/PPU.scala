@@ -87,7 +87,7 @@ class PPU(nes: NES) {
     def loadPALPalette(): Unit = {
       curTable = Array(0x525252, 0xB40000, 0xA00000, 0xB1003D, 0x740069, 0x00005B, 0x00005F, 0x001840, 0x002F10, 0x084A08, 0x006700, 0x124200, 0x6D2800, 0x000000, 0x000000, 0x000000, 0xC4D5E7, 0xFF4000, 0xDC0E22, 0xFF476B, 0xD7009F, 0x680AD7, 0x0019BC, 0x0054B1, 0x006A5B, 0x008C03, 0x00AB00, 0x2C8800, 0xA47200, 0x000000, 0x000000, 0x000000, 0xF8F8F8, 0xFFAB3C, 0xFF7981, 0xFF5BC5, 0xFF48F2, 0xDF49FF, 0x476DFF, 0x00B4F7, 0x00E0FF, 0x00E375, 0x03F42B, 0x78B82E, 0xE5E218, 0x787878, 0x000000, 0x000000, 0xFFFFFF, 0xFFF2BE, 0xF8B8B8, 0xF8B8D8, 0xFFB6FF, 0xFFC3FF, 0xC7D1FF, 0x9ADAFF, 0x88EDF8, 0x83FFDD, 0xB8F8B8, 0xF5F8AC, 0xFFFFB0, 0xF8D8F8, 0x000000, 0x000000)
       makeTables()
-      setEmphasis(0);
+      setEmphasis(0)
     }
 	
     /** Creates the emphasis table for each existing emphasis (0 to 8), using the given Palette (NTSC, PAL or default) */
@@ -465,7 +465,7 @@ class PPU(nes: NES) {
   val StatusVBlank: Byte =  7
   
   /** Initializing/reseting all variables at reset. */
-  def reset: Unit = {
+  def reset(): Unit = {
     // Memory
     vramMem = new Array(0x8000)(0)
     spriteMem = new Array(0x100)(0)
@@ -530,7 +530,7 @@ class PPU(nes: NES) {
     bgbuffer = new Array(256*240)
     pixrendered = new Array(256*240)
 
-    validTileData = null
+    validTileData = false
 
     scantile = new Array(32)
         
@@ -657,7 +657,7 @@ class PPU(nes: NES) {
   def defineMirrorRegion(fromStart: Int, toStart: Int, size: Int): Unit = for (i <- 1 to size) vramMirrorTable(fromStart+i) = toStart+i
 
   /** Interrupt the CPU and render everything. */
-  def startVBlank: Unit = {
+  def startVBlank(): Unit = {
     // Do non-maskable interrupt:
     nes.cpu.requestIrq(1)
         
@@ -672,7 +672,7 @@ class PPU(nes: NES) {
   }
 
   /** Render the scanline when necessary and check sprite 0 hit when necessary.  */
-  def endScanline: Unit = {
+  def endScanline(): Unit = {
     (scanline: @switch) match {
       case 19 =>
         // Dummy scanline, may be variable length:
@@ -709,7 +709,7 @@ class PPU(nes: NES) {
         if (f_bgVisibility == 1 && f_spVisibility == 1) checkSprite0(0)
 
         // Clock mapper IRQ Counter:
-        if (f_bgVisibility == 1 || f_spVisibility == ) nes.mmap.clockIrqCounter()
+        if (f_bgVisibility == 1 || f_spVisibility == 1) nes.mmap.clockIrqCounter()
  
       case 261 => // Dead scanline, no rendering.
         // Set VINT:
@@ -789,7 +789,7 @@ class PPU(nes: NES) {
   }
   
   /** Finalize the frame by putting sprites, than show it on UI. */
-  def endFrame: Unit = {
+  def endFrame(): Unit = {
     // Draw spr#0 hit coordinates:
     if (showSpr0Hit) {
       // Spr 0 position:
@@ -863,7 +863,7 @@ class PPU(nes: NES) {
   }
   
   /** CPU Register $2002: Read the Status Register. */
-  def readStatusRegister: Byte = {
+  def readStatusRegister(): Byte = {
     var tmp : Byte = nes.cpu.memory(0x2002)
 
     // Reset scroll & VRAM Address toggle:
@@ -880,7 +880,7 @@ class PPU(nes: NES) {
   def writeSRAMAddress(address: Int): Unit = sramAddress = address
 
   /** CPU Register $2004 (R): Read from SPR-RAM (Sprite RAM). The address should be set first. */
-  def sramLoad: Int = return spriteMem(sramAddress)
+  def sramLoad(): Int = return spriteMem(sramAddress)
   
   /** CPU Register $2004 (R): Write to SPR-RAM (Sprite RAM). The address should be set first. */
   def sramWrite(value: Int): Unit = {
@@ -904,7 +904,7 @@ class PPU(nes: NES) {
       regVT = (value>>3)&31
     }
     
-    firstWrite = !firstWrite;
+    firstWrite = !firstWrite
   }
   
   /** CPU Register $2006: Sets the address used when reading/writing from/to VRAM. The first write sets the high byte, the second the low byte. */
@@ -929,7 +929,7 @@ class PPU(nes: NES) {
       checkSprite0(scanline-20)
     }
 
-    firstWrite = !firstWrite;
+    firstWrite = !firstWrite
 
     // Invoke mapper latch:
     cntsToAddress()
@@ -937,7 +937,7 @@ class PPU(nes: NES) {
   }
   
   /** CPU Register $2007(R): Read from PPU memory. The address should be set first. */
-  def vramLoad: Int = {
+  def vramLoad(): Int = {
     var tmp : Int = _
 
     cntsToAddress()
@@ -1016,7 +1016,7 @@ class PPU(nes: NES) {
   }
   
   /** Updates the scroll registers from a new VRAM address. */
-  def regsFromAddress: Unit = {
+  def regsFromAddress(): Unit = {
     var address : Int = (vramTmpAddress>>8)&0xFF
     
     regFV = (address>>4)&7
@@ -1024,13 +1024,13 @@ class PPU(nes: NES) {
     regH = (address>>2)&1
     regVT = (regVT&7) | ((address&3)<<3)
 
-    address = vramTmpAddress&0xFF;
+    address = vramTmpAddress&0xFF
     regVT = (regVT&24) | ((address>>5)&7)
     regHT = address&31
   }
   
   /** Updates the scroll registers from a new VRAM address. */
-  def cntsFromAddress: Unit = {
+  def cntsFromAddress(): Unit = {
     var address : Int = (vramAddress>>8)&0xFF
     
     cntFV = (address>>4)&3
@@ -1044,7 +1044,7 @@ class PPU(nes: NES) {
   }
   
   /* Updates the VRAM address from the scroll registers. */
-  def regsToAddress: Unit = {
+  def regsToAddress(): Unit = {
     var b1 : Int = (regFV&7)<<4
     b1 |= (regV&1)<<3
     b1 |= (regH&1)<<2
@@ -1057,7 +1057,7 @@ class PPU(nes: NES) {
   }
   
   /* Updates the VRAM address from the scroll registers. */
-  def cntsToAddress: Unit = {
+  def cntsToAddress(): Unit = {
     var b1 : Int = (cntFV&7)<<4
     b1 |= (cntV&1)<<3
     b1 |= (cntH&1)<<2
@@ -1122,7 +1122,7 @@ class PPU(nes: NES) {
   }
   
   /** Start rendering frames at scanline. */
-  def triggerRendering: Unit = {
+  def triggerRendering(): Unit = {
     if (scanline >= 21 && scanline <= 260) {
       // Render sprites, and combine:
       renderFramePartially( lastRenderedScanline + 1, scanline - 21 - lastRenderedScanline)
@@ -1224,7 +1224,7 @@ class PPU(nes: NES) {
       }
             
       // Tile data for one row should now have been fetched, so the data in the array is valid.
-      validTileData = true;
+      validTileData = true
 
     }
         
@@ -1428,7 +1428,7 @@ class PPU(nes: NES) {
   }
   
   /** Reads data from $3f00 to $f20 into the two buffered palettes. */
-  def updatePalettes: Unit = {
+  def updatePalettes(): Unit = {
     for (i <- 1 to 16) {
       if (f_dispType == 0) imgPalette(i) = palTable.getEntry(vramMem(0x3f00 + i) & 63)
       else imgPalette(i) = palTable.getEntry(vramMem(0x3f00 + i) & 32)
@@ -1479,7 +1479,7 @@ class PPU(nes: NES) {
   }
   
   /** Does a non-maskable interrupt. */
-  def doNMI: Unit = {
+  def doNMI(): Unit = {
     // Set VBlank flag:
     setStatusFlag(StatusVBlank, true)
     nes.cpu.requestIrq(1)
