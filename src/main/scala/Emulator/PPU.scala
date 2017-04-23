@@ -1,5 +1,6 @@
 package Emulator
-import scala.js.Dynamic.global
+import scala.annotation.switch
+import scala.scalajs.js.Dynamic
 
 /** Picture Processing Unit class, permits to generate the images/video for the emulator.
   * Uses registers, a memory map, palettes, sprites and several tables.
