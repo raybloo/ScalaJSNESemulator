@@ -319,5 +319,8 @@ class Mapper(mapper_type: Int,nes: NES) {
       */
     } //I'll need more time to implement this, since I don't quite understand this
   }
+  
+  def clockIrqCounter(): Unit = {
+  }
 
 }

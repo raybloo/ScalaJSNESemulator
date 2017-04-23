@@ -400,7 +400,7 @@ class PPU(nes: NES) {
   var nmiOk : Boolean = false
   var dummyCycleToggle : Boolean = false
   var nmiCounter: Int = 0
-  var scanlineAlreadyRendered = null
+  var scanlineAlreadyRendered : Boolean = _
   var f_nmiOnVblank : Int = 0
   var f_spriteSize : Int = 0
   var f_bgPatternTable : Int = 0
@@ -449,11 +449,11 @@ class PPU(nes: NES) {
   var hitSpr0 : Boolean = false
   var sprPalette : Array[Int] = null
   var imgPalette : Array[Int] = null
-  var ptTile : Array[Tile] = null
+  var ptTile : Array[Tile] = _
   var ntable1 : Array[Int] = null
-  var nameTable : Array[NameTable] = null
+  var nameTable : Array[NameTable] = _
   var vramMirrorTable : Array[Int] = null
-  var palTable : PaletteTable = null
+  var palTable : PaletteTable = _
 
   // Rendering Options:
   var showSpr0Hit: Boolean = false
@@ -486,7 +486,7 @@ class PPU(nes: NES) {
     dummyCycleToggle = false
     validTileData = false
     nmiCounter = 0
-    scanlineAlreadyRendered = null
+    scanlineAlreadyRendered = _
         
     // Control Flags Register 1:
     f_nmiOnVblank = 0         // NMI on VBlank. 0=disable, 1=enable
