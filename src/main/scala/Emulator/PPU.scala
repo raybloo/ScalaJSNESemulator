@@ -443,7 +443,7 @@ class PPU(nes: NES) {
   var sprCol : Array[Int] = null
   var vertFlip : Array[Int] = null
   var horiFlip : Array[Int] = null
-  var bgPriority : Array[Int] = null
+  var bgPriority : Array[Boolean] = null
   var spr0HitX : Int = 0
   var spr0HitY : Int = 0
   var hitSpr0 : Boolean = false
@@ -939,7 +939,7 @@ class PPU(nes: NES) {
   
   /** CPU Register $2007(R): Read from PPU memory. The address should be set first. */
   def vramLoad(): Int = {
-    var tmp : Int = _
+    var tmp : Int = -1
 
     cntsToAddress()
     regsToAddress()
@@ -1005,7 +1005,7 @@ class PPU(nes: NES) {
   /**  CPU Register $4014: Write 256 bytes of main memory into Sprite RAM. */
   def sramDMA(value: Int): Unit = {
     var baseAddress : Int = value * 0x100
-    var data : Int = _
+    var data : Int = 0
     
     for (i <- sramAddress to 256) {
       data = nes.cpu.mem(baseAddress+i)
@@ -1162,9 +1162,9 @@ class PPU(nes: NES) {
         
     if (scan < 240 && (scan - cntFV) >= 0) {
       var tscanoffset : Int = cntFV<<3
-      var targetBuffer : Int = if (bgbuffer) bgbuffer else buffer
+      var targetBuffer : Array[Int] = if (bgbuffer) bgbuffer else buffer // WTF ?
       
-      var t, tpix, att, col : Int = _
+      var t, tpix, att, col : Int = 0
       
       for (tile <- 0 to 32) {
         if (scan >= 0) {
@@ -1247,7 +1247,7 @@ class PPU(nes: NES) {
   }
   
   /** Renders the sprite data for a given scanline */
-  def renderSpritesPartially(startScan: Int, scanCount: Int, bgPri: Int): Unit = {
+  def renderSpritesPartially(startScan: Int, scanCount: Int, bgPri: Boolean): Unit = {
     if (f_spVisibility == 1) {
       for (i <- 1 to 64) {
         if (bgPriority(i) == bgPri && sprX(i) >= 0 && sprX(i) < 256 && sprY(i)+8 >= startscan &&  sprY(i) < startscan + scancount) {
