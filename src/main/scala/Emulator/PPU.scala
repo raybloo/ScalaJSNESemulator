@@ -390,8 +390,8 @@ class PPU(nes: NES) {
 
   var vramMem : Array[Int] = null
   var spriteMem : Array[Int] = null
-  var vramAddress = null
-  var vramTmpAddress = null
+  var vramAddress : Int = _
+  var vramTmpAddress : Int = _
   var vramBufferedReadValue : Int = 0
   var firstWrite : Boolean = true
   var sramAddress : Int = 0
@@ -400,7 +400,7 @@ class PPU(nes: NES) {
   var nmiOk : Boolean = false
   var dummyCycleToggle : Boolean = false
   var nmiCounter: Int = 0
-  var scanlineAlreadyRendered : Boolean = _
+  var scanlineAlreadyRendered : Boolean = false
   var f_nmiOnVblank : Int = 0
   var f_spriteSize : Int = 0
   var f_bgPatternTable : Int = 0
@@ -425,7 +425,7 @@ class PPU(nes: NES) {
   var regHT : Int = 0
   var regFH : Int = 0
   var regS : Int = 0
-  var curNt = null
+  var curNt : Int = -1
   var attrib: Array[Int] = null
   var buffer : Array[Int] = null
   var prevBuffer : Array[Int] = null
@@ -472,8 +472,8 @@ class PPU(nes: NES) {
     spriteMem = new Array(0x100)(0)
 
     // VRAM I/O:
-    vramAddress = null
-    vramTmpAddress = null
+    vramAddress = -1
+    vramTmpAddress = -1
     vramBufferedReadValue = 0
     firstWrite = true         // VRAM/Scroll Hi/Lo latch
 
@@ -486,7 +486,7 @@ class PPU(nes: NES) {
     dummyCycleToggle = false
     validTileData = false
     nmiCounter = 0
-    scanlineAlreadyRendered = _
+    scanlineAlreadyRendered = false
         
     // Control Flags Register 1:
     f_nmiOnVblank = 0         // NMI on VBlank. 0=disable, 1=enable
@@ -522,7 +522,7 @@ class PPU(nes: NES) {
         
     // These are temporary variables used in rendering and sound procedures.
     // Their states outside of those procedures can be ignored.
-    curNt = null
+    curNt = -1
         
     // Variables used when rendering:
     attrib = new Array(32)

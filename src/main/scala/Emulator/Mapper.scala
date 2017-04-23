@@ -320,7 +320,11 @@ class Mapper(mapper_type: Int,nes: NES) {
     } //I'll need more time to implement this, since I don't quite understand this
   }
   
+  // TODO : added functions for PPU
   def clockIrqCounter(): Unit = {
+  }
+  
+  def latchAccess(x : Int): Unit = {
   }
 
 }
