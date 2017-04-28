@@ -860,7 +860,7 @@ class PPU(nes: NES) {
 
   def setStatusFlag(flag: Int, value: Boolean): Unit = {
     var n = 1<<flag
-    nes.cpu.memory(0x2002) = ((nes.cpu.memory (0x2002) & (255-n)) | (if (value) n else 0)).asInstanceOf(Byte)
+    nes.cpu.memory(0x2002) = ((nes.cpu.memory (0x2002) & (255-n)) | (if (value) n else 0)).asInstanceOf[Byte]
   }
   
   /** CPU Register $2002: Read the Status Register. */
@@ -1118,7 +1118,7 @@ class PPU(nes: NES) {
       // Use lookup table for mirrored address:
       if (address < vramMirrorTable.length) {
         writeMem(vramMirrorTable(address), value)
-      } else Dynamic.global.alert("Invalid VRAM address: " + address.toString(16)) // Check if correct
+      } else Dynamic.global.alert("Invalid VRAM address: " + address.toString())
     }
   }
   
@@ -1165,7 +1165,8 @@ class PPU(nes: NES) {
       var targetBuffer : Array[Int] = if (bgbuffer) bgbuffer else buffer // WTF ?
       
       var t : Tile = null
-      var tpix, att, col : Int = 0
+      var tpix : Array[Int] = null
+      var att, col : Int = 0
       
       for (tile <- 0 to 32) {
         if (scan >= 0) {
@@ -1444,7 +1445,7 @@ class PPU(nes: NES) {
   
   /** Updates the internal pattern table buffers with new given value. */
   def patternWrite(address: Int, value: Int): Unit = {
-    var tileIndex : Int = Math.floor(address / 16).asInstanceOf(Int)
+    var tileIndex : Int = Math.floor(address / 16).asInstanceOf[Int]
     var leftOver : Int = address % 16
 
     if (leftOver < 8) ptTile(tileIndex).setScanline(leftOver, value, vramMem(address + 8))
@@ -1464,7 +1465,7 @@ class PPU(nes: NES) {
   
   /** Updates the internally buffered sprite data with this new byte of info. */
   def spriteRamWriteUpdate(address: Int, value: Int): Unit = {
-    var tIndex : Int = Math.floor(address / 4).asInstanceOf(Int)
+    var tIndex : Int = Math.floor(address / 4).asInstanceOf[Int]
     
     if (tIndex == 0) checkSprite0(scanline - 20)
     
