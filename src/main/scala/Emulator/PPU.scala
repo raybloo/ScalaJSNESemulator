@@ -433,7 +433,7 @@ class PPU(nes: NES) {
   var pixrendered : Array[Int] = null
 
   var validTileData : Boolean = false
-  var scantile : Array[Int] = null
+  var scantile : Array[Tile] = null
   var scanline: Int = 0
   var lastRenderedScanline : Int = -1
   var curX : Int = 0
@@ -1164,7 +1164,8 @@ class PPU(nes: NES) {
       var tscanoffset : Int = cntFV<<3
       var targetBuffer : Array[Int] = if (bgbuffer) bgbuffer else buffer // WTF ?
       
-      var t, tpix, att, col : Int = 0
+      var t : Tile = null
+      var tpix, att, col : Int = 0
       
       for (tile <- 0 to 32) {
         if (scan >= 0) {
