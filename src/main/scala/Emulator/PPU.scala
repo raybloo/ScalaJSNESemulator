@@ -16,7 +16,7 @@ class PPU(nes: NES) {
     *
     * A NES will contain 4 NameTables, arranged in a 2x2 pattern.
     */
-  private class NameTable(w: Int, h: Int, n: String) {
+  class NameTable(w: Int, h: Int, n: String) {
     val width : Int = w
     val height : Int = h
     val name : String = n
@@ -69,7 +69,7 @@ class PPU(nes: NES) {
     * 
     * Each NES has only one color Palette.
     */
-  private class PaletteTable {
+  class PaletteTable {
     var curTable : Array[Int] = new Array(64)
     var emphTable : Array[Array[Int]] = Array.ofDim[Int](8, 64)
     var currentEmph : Int = -1
@@ -238,7 +238,7 @@ class PPU(nes: NES) {
     * 
     * The Tile class will be used to render each tile in the buffer for the NES.
     */
-  private class Tile {
+  class Tile {
     // Tile data:
     var pix: Array[Int] = new Array(64)
     
