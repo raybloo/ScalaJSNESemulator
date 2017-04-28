@@ -9,7 +9,7 @@ import scala.scalajs.js.timers.SetIntervalHandle
   */
 class NES() {
   // Init. all instances and state variables used for the emulator
-  private val ui: UI = new UI
+  val ui: UI = new UI
   private var program: Program = null
 
   // Init. accessible components
@@ -30,7 +30,7 @@ class NES() {
   private var intervalFrame: SetIntervalHandle = null
   private var isRunning: Boolean = false
   private var emulateSound: Boolean = true
-  private var showDisplay: Boolean = true
+  var showDisplay: Boolean = true
   private var oldRomUrl: String = ""
 
   ui.updateStatus("Ready to load ROM")

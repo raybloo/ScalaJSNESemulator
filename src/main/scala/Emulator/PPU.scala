@@ -441,8 +441,8 @@ class PPU(nes: NES) {
   var sprY : Array[Int] = null
   var sprTile : Array[Int] = null
   var sprCol : Array[Int] = null
-  var vertFlip : Array[Int] = null
-  var horiFlip : Array[Int] = null
+  var vertFlip : Array[Boolean] = null
+  var horiFlip : Array[Boolean] = null
   var bgPriority : Array[Boolean] = null
   var spr0HitX : Int = 0
   var spr0HitY : Int = 0
@@ -860,7 +860,7 @@ class PPU(nes: NES) {
 
   def setStatusFlag(flag: Int, value: Boolean): Unit = {
     var n = 1<<flag
-    nes.cpu.memory(0x2002) = (nes.cpu.memory (0x2002) & (255-n)) | (if (value) n else 0)
+    nes.cpu.memory(0x2002) = ((nes.cpu.memory (0x2002) & (255-n)) | (if (value) n else 0)).asInstanceOf(Byte)
   }
   
   /** CPU Register $2002: Read the Status Register. */
@@ -1008,7 +1008,7 @@ class PPU(nes: NES) {
     var data : Int = 0
     
     for (i <- sramAddress to 256) {
-      data = nes.cpu.mem(baseAddress+i)
+      data = nes.cpu.memory(baseAddress+i)
       spriteMem(i) = data
       spriteRamWriteUpdate(i, data)
     }
@@ -1118,7 +1118,7 @@ class PPU(nes: NES) {
       // Use lookup table for mirrored address:
       if (address < vramMirrorTable.length) {
         writeMem(vramMirrorTable(address), value)
-      } else global.alert("Invalid VRAM address: " + address.toString(16)) // Check if correct
+      } else Dynamic.global.alert("Invalid VRAM address: " + address.toString(16)) // Check if correct
     }
   }
   
@@ -1251,15 +1251,15 @@ class PPU(nes: NES) {
   def renderSpritesPartially(startScan: Int, scanCount: Int, bgPri: Boolean): Unit = {
     if (f_spVisibility == 1) {
       for (i <- 1 to 64) {
-        if (bgPriority(i) == bgPri && sprX(i) >= 0 && sprX(i) < 256 && sprY(i)+8 >= startscan &&  sprY(i) < startscan + scancount) {
+        if (bgPriority(i) == bgPri && sprX(i) >= 0 && sprX(i) < 256 && sprY(i)+8 >= startScan &&  sprY(i) < startScan + scanCount) {
           // Show sprite.
           if (f_spriteSize == 0) {
             // 8x8 sprites
             var srcy1 : Int = 0
             var srcy2 : Int = 8
 
-            if (sprY(i) < startscan) srcy1 = startscan - sprY(i)-1
-            if (sprY(i)+8 > startscan + scancount) srcy2 = startscan + scancount - sprY(i)+1
+            if (sprY(i) < startScan) srcy1 = startScan - sprY(i)-1
+            if (sprY(i)+8 > startScan + scanCount) srcy2 = startScan + scanCount - sprY(i)+1
             if (f_spPatternTable == 0) {
               ptTile(sprTile(i)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i)+1, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
             } else {
@@ -1274,16 +1274,16 @@ class PPU(nes: NES) {
             var srcy1 : Int = 0
             var srcy2 : Int = 8
 
-            if (sprY(i) < startscan) srcy1 = startscan - sprY(i) - 1
-            if (sprY(i)+8 > startscan + scancount) srcy2 = startscan + scancount - sprY(i)
+            if (sprY(i) < startScan) srcy1 = startScan - sprY(i) - 1
+            if (sprY(i)+8 > startScan + scanCount) srcy2 = startScan + scanCount - sprY(i)
 
             ptTile(top + (if (vertFlip(i)) 1 else 0)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i)+1, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
 
             srcy1 = 0
             srcy2 = 8
 
-            if (sprY(i)+8 < startscan) srcy1 = startscan - (sprY(i) + 8 + 1)
-            if (sprY(i)+16 > startscan + scancount) srcy2 = startscan + scancount - (sprY(i)+8)
+            if (sprY(i)+8 < startScan) srcy1 = startScan - (sprY(i) + 8 + 1)
+            if (sprY(i)+16 > startScan + scanCount) srcy2 = startScan + scanCount - (sprY(i)+8)
             
             ptTile(top + (if (vertFlip(i)) 0 else 1)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i) + 1 + 8, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
           }
@@ -1297,10 +1297,10 @@ class PPU(nes: NES) {
     spr0HitX = -1
     spr0HitY = -1
     
-    var toffset : Int = _
+    var toffset : Int = -1
     var tIndexAdd : Int = (if (f_spPatternTable == 0) 0 else 256)
-    var t : Int = _
-    var bufferIndex : Int = _
+    var t : Tile = null
+    var bufferIndex : Int = -1
         
     var x :Int = sprX(0)
     var y : Int = sprY(0) + 1
@@ -1311,7 +1311,7 @@ class PPU(nes: NES) {
         // Draw scanline:
         t = ptTile(sprTile(0) + tIndexAdd)
 
-        if (vertFlip(0)) toffset = 7 - (scan -y)
+        if (vertFlip(0)) toffset = 7 - (scan - y)
         else toffset = scan - y
         
         toffset *= 8
@@ -1444,7 +1444,7 @@ class PPU(nes: NES) {
   
   /** Updates the internal pattern table buffers with new given value. */
   def patternWrite(address: Int, value: Int): Unit = {
-    var tileIndex : Int = Math.floor(address / 16)
+    var tileIndex : Int = Math.floor(address / 16).asInstanceOf(Int)
     var leftOver : Int = address % 16
 
     if (leftOver < 8) ptTile(tileIndex).setScanline(leftOver, value, vramMem(address + 8))
@@ -1464,7 +1464,7 @@ class PPU(nes: NES) {
   
   /** Updates the internally buffered sprite data with this new byte of info. */
   def spriteRamWriteUpdate(address: Int, value: Int): Unit = {
-    var tIndex : Int = Math.floor(address / 4)
+    var tIndex : Int = Math.floor(address / 4).asInstanceOf(Int)
     
     if (tIndex == 0) checkSprite0(scanline - 20)
     
