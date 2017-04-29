@@ -429,7 +429,7 @@ class PPU(nes: NES) {
   var attrib: Array[Int] = null
   var buffer : Array[Int] = null
   var prevBuffer : Array[Int] = null
-  var bgbuffer : Array[Int] = null
+  var bgbuffer : Option[Array[Int]] = None
   var pixrendered : Array[Int] = null
 
   var validTileData : Boolean = false
@@ -1162,7 +1162,7 @@ class PPU(nes: NES) {
         
     if (scan < 240 && (scan - cntFV) >= 0) {
       var tscanoffset : Int = cntFV<<3
-      var targetBuffer : Array[Int] = if (bgbuffer) bgbuffer else buffer // WTF ?
+      var targetBuffer : Array[Int] = bgbuffer.getOrElse(buffer)
       
       var t : Tile = null
       var tpix : Array[Int] = null

@@ -656,6 +656,9 @@ class CPU(nes: NES) {
   def stackwrap = {
     sp = 0x0100 | (sp&0xff)
   }
+  
+  def haltCycles(x: Int): Unit = {
+  }
 
   /** Contains all the data about the opcode in 4 arrays
     * every instruction has its own:
