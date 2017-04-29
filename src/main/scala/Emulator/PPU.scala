@@ -1142,7 +1142,7 @@ class PPU(nes: NES) {
       var ei : Int = (startScan+scanCount)<<8
       if (ei > 0xF000) ei = 0xF000
 
-      for (destIndex <- si to ei) if (pixrendered(destIndex) > 0xFF) buffer(destIndex) = bgbuffer(destIndex)
+      for (destIndex <- si to ei) if (pixrendered(destIndex) > 0xFF) buffer(destIndex) = bgbuffer.get(destIndex)
     }
 
     if (f_spVisibility == 1) renderSpritesPartially(startScan, scanCount, false)
