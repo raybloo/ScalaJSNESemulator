@@ -528,7 +528,7 @@ class PPU(nes: NES) {
     attrib = new Array(32)
     buffer = new Array(256*240)
     prevBuffer = new Array(256*240)
-    bgbuffer = new Array(256*240)
+    bgbuffer = Some(new Array(256*240))
     pixrendered = new Array(256*240)
 
     validTileData = false
