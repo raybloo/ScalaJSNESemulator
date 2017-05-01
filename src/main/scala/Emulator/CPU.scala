@@ -662,6 +662,11 @@ class CPU(nes: NES) {
     cyclesToHalt += cycles
   }
 
+  /** Clears pending irq */
+  def clearIRQ: Unit = {
+    //not yet implemented
+  }
+
   /** Contains all the data about the opcode in 4 arrays
     * every instruction has its own:
     *   - number of instruction (for our switch)

@@ -7,7 +7,7 @@ import scala.scalajs.js.Dynamic
   * It acts like like a cartridge board. There are
   * different types of mappers that vary from one game to another
   */
-class Mapper(mapper_type: Int,nes: NES) {
+abstract class Mapper(mapper_type: Int,nes: NES) {
 
   //Devices State
   var joy1StrobeState = 0
@@ -27,7 +27,7 @@ class Mapper(mapper_type: Int,nes: NES) {
     mouseY = 0
   }
 
-  /** Write to memory or to specific register*/
+  /** Write to memory or to specific register */
   def write(address: Int, value: Byte): Unit = {
     if (address < 0x2000) {
       // Mirroring of RAM:
@@ -74,58 +74,58 @@ class Mapper(mapper_type: Int,nes: NES) {
       case 0x2000 =>
         // PPU Control register 1
         nes.cpu.memory(address) = value
-        //nes.ppu.updateControlReg1(value)
+      //nes.ppu.updateControlReg1(value)
       case 0x2001 =>
         // PPU Control register 2
         nes.cpu.memory(address) = value
-        //nes.ppu.updateControlReg2(value)
+      //nes.ppu.updateControlReg2(value)
       case 0x2003 =>
-        // Set Sprite RAM address:
-        //TODO: nes.ppu.writeSRAMAddress(value)
+      // Set Sprite RAM address:
+      //TODO: nes.ppu.writeSRAMAddress(value)
       case 0x2004 =>
-        // Write to Sprite RAM:
-        //TODO: nes.ppu.sramWrite(value)
+      // Write to Sprite RAM:
+      //TODO: nes.ppu.sramWrite(value)
       case 0x2005 =>
-        // Screen Scroll offsets:
-        //TODO: nes.ppu.scrollWrite(value)
+      // Screen Scroll offsets:
+      //TODO: nes.ppu.scrollWrite(value)
       case 0x2006 =>
-        // Set VRAM address:
-        //TODO: nes.ppu.writeVRAMAddress(value)
+      // Set VRAM address:
+      //TODO: nes.ppu.writeVRAMAddress(value)
       case 0x2007 =>
-        // Write to VRAM:
-        //TODO: nes.ppu.vramWrite(value)
+      // Write to VRAM:
+      //TODO: nes.ppu.vramWrite(value)
       case 0x4014 =>
-        // Sprite Memory DMA Access
+      // Sprite Memory DMA Access
       //TODO: nes.ppu.sramDMA(value)
       case 0x4015 =>
-        // Sound Channel Switch, DMC Status
+      // Sound Channel Switch, DMC Status
       //TODO: nes.papu.writeReg(address, value)
       case 0x4016 =>
         // Joystick 1 + Strobe
-        if ((value&1) == 0 && (joypadLastWrite&1) == 1) {
+        if ((value & 1) == 0 && (joypadLastWrite & 1) == 1) {
           joy1StrobeState = 0
           joy2StrobeState = 0
         }
         joypadLastWrite = value
       case 0x4017 =>
-        // Sound channel frame sequencer:
-        //TODO: nes.papu.writeReg(address, value)
+      // Sound channel frame sequencer:
+      //TODO: nes.papu.writeReg(address, value)
       case _ =>
-      // Sound registers
-      // console.log("write to sound reg")
-      if (address >= 0x4000 && address <= 0x4017) {
-        //TODO: nes.papu.writeReg(address,value)
-      }
+        // Sound registers
+        // console.log("write to sound reg")
+        if (address >= 0x4000 && address <= 0x4017) {
+          //TODO: nes.papu.writeReg(address,value)
+        }
     }
   }
 
   /** Load ROM, mirrored RAM or I/O ports */
   def load(addr: Int): Int = {
     // Check address range:
-    if ((addr&0xffff) > 0x4017) {
+    if ((addr & 0xffff) > 0x4017) {
       // ROM:
       nes.cpu.memory(addr)
-    } else if ((addr&0xffff) >= 0x2000) {
+    } else if ((addr & 0xffff) >= 0x2000) {
       // I/O Ports.
       regLoad(addr)
     } else {
@@ -136,7 +136,7 @@ class Mapper(mapper_type: Int,nes: NES) {
 
   /** Load I/O register */
   def regLoad(addr: Int): Int = {
-    val hnAddr: Int = (addr&0xF000) >> 12 //Use the highest 4 bytes of address
+    val hnAddr: Int = (addr & 0xF000) >> 12 //Use the highest 4 bytes of address
     (hnAddr: @switch) match {
       case 0 =>
         0
@@ -162,27 +162,27 @@ class Mapper(mapper_type: Int,nes: NES) {
             // (not in the real NES)
             nes.cpu.memory(0x2001)
           case 0x2 =>
-            // 0x2002:
-            // PPU Status Register.
-            // The value is stored in
-            // main memory in addition
-            // to as flags in the PPU.
-            // (not in the real NES)
-            //TODO: nes.ppu.readStatusRegister()
+          // 0x2002:
+          // PPU Status Register.
+          // The value is stored in
+          // main memory in addition
+          // to as flags in the PPU.
+          // (not in the real NES)
+          //TODO: nes.ppu.readStatusRegister()
           case 0x3 =>
             0
           case 0x4 =>
-            // 0x2004:
-            // Sprite Memory read.
-            //TODO: nes.ppu.sramLoad()
+          // 0x2004:
+          // Sprite Memory read.
+          //TODO: nes.ppu.sramLoad()
           case 0x5 =>
             0
           case 0x6 =>
             0
           case 0x7 =>
-            // 0x2007:
-            // VRAM read:
-            //TODO: nes.ppu.vramLoad()
+          // 0x2007:
+          // VRAM read:
+          //TODO: nes.ppu.vramLoad()
           case _ =>
             0 //Shouldn't be possible
         }
@@ -190,9 +190,9 @@ class Mapper(mapper_type: Int,nes: NES) {
         // Sound+Joypad registers
         (((addr & 0xffff) - 0x4015): @switch) match {
           case 0 =>
-            // 0x4015:
-            // Sound channel enable, DMC Status
-            //TODO: nes.papu.readReg(address)
+          // 0x4015:
+          // Sound channel enable, DMC Status
+          //TODO: nes.papu.readReg(address)
           case 1 =>
             // 0x4016:
             // Joystick 1 + Strobe
@@ -200,7 +200,7 @@ class Mapper(mapper_type: Int,nes: NES) {
           case 2 =>
             // 0x4017:
             // Joystick 2 + Strobe
-            if(mousePressed) {
+            if (mousePressed) {
               // Check for white pixel nearby:
               val sx = Math.max(0, mouseX - 4)
               val ex = Math.min(256, mouseX + 4)
@@ -210,15 +210,15 @@ class Mapper(mapper_type: Int,nes: NES) {
               for (y <- sy to ey) {
                 for (x <- sx to ex) {
 
-                  if (nes.ppu.buffer((y<<8)+x) == 0xffffff) {
-                    w |= 0x1<<3
+                  if (nes.ppu.buffer((y << 8) + x) == 0xffffff) {
+                    w |= 0x1 << 3
                     Dynamic.global.console("Clicked on white!")
                     return 0
                   }
                 }
               }
-              w |= (if(mousePressed) (0x1<<4) else 0)
-              (joy2Read|w) & 0xFFFF
+              w |= (if (mousePressed) (0x1 << 4) else 0)
+              (joy2Read | w) & 0xFFFF
             }
             else {
               joy2Read
@@ -243,7 +243,7 @@ class Mapper(mapper_type: Int,nes: NES) {
       case _ =>
         ret = 0
     }
-    joy1StrobeState = (joy1StrobeState+1)%24
+    joy1StrobeState = (joy1StrobeState + 1) % 24
     ret
   }
 
@@ -258,7 +258,7 @@ class Mapper(mapper_type: Int,nes: NES) {
       case _ =>
         ret = 0
     }
-    joy2StrobeState = (joy2StrobeState+1)%24
+    joy2StrobeState = (joy2StrobeState + 1) % 24
     ret
   }
 
@@ -274,7 +274,7 @@ class Mapper(mapper_type: Int,nes: NES) {
     }
   }
 
-  /** Load program rom into memory*/
+  /** Load program rom into memory */
   def loadPRGROM: Unit = {
     if (nes.rom.getPrgRomSize > 1) {
       // Load the two first banks into memory.
@@ -298,11 +298,11 @@ class Mapper(mapper_type: Int,nes: NES) {
       //it was initialized as an int * 2...
       //I won't use it for now
       //if (nes.rom.getChrRomSize == 1) {
-        //TODO: loadVromBank(0,0x0000)
-        //TODO: loadVromBank(0,0x1000)
+      //TODO: loadVromBank(0,0x0000)
+      //TODO: loadVromBank(0,0x1000)
       //} else {
-        load4KVromBank(0,0x0000)
-        load4KVromBank(1,0x1000)
+      load4KVromBank(0, 0x0000)
+      load4KVromBank(1, 0x1000)
       //}
     }
     else {
@@ -310,39 +310,40 @@ class Mapper(mapper_type: Int,nes: NES) {
     }
   }
 
-  /** Load battery ram if any. Unused for now*/
+  /** Load battery ram if any. Unused for now */
   def loadBatteryRam: Unit = {
     if (nes.rom.hasBatteryRam) {
       /*
-      var ram = nes.rom.batteryRam;
-      if (ram !== null && ram.length == 0x2000) {
-        // Load Battery RAM into memory:
-        JSNES.Utils.copyArrayElements(ram, 0, nes.cpu.mem, 0x6000, 0x2000)
-      }
-      */
+          var ram = nes.rom.batteryRam;
+          if (ram !== null && ram.length == 0x2000) {
+            // Load Battery RAM into memory:
+            JSNES.Utils.copyArrayElements(ram, 0, nes.cpu.mem, 0x6000, 0x2000)
+          }
+          */
     } //I'll need more time to implement this, since I don't quite understand this
   }
 
   /** Load one program rom bank of 16KB */
-  def loadRomBank(bank: Int, address: Int): Unit =  { //default: 16KB banks
+  def loadRomBank(bank: Int, address: Int): Unit = {
+    //default: 16KB banks
     // Loads a ROM bank into the specified address.
     //var data = this.nes.rom.rom[bank];
     //cpuMem.write(address,data,data.length);
-    nes.rom.prgRom(bank % nes.rom.getPrgRomSize).copyToArray(nes.cpu.memory,address,0x4000)
+    nes.rom.prgRom(bank % nes.rom.getPrgRomSize).copyToArray(nes.cpu.memory, address, 0x4000)
   }
 
   /** Load 2 program rom banks of a total of 32KB */
   def load32kRomBank(bank: Int, address: Int): Unit = {
-    loadRomBank((bank*2) % nes.rom.getPrgRomSize, address)
-    loadRomBank((bank*2+1) % nes.rom.getPrgRomSize, address+0x4000)
+    loadRomBank((bank * 2) % nes.rom.getPrgRomSize, address)
+    loadRomBank((bank * 2 + 1) % nes.rom.getPrgRomSize, address + 0x4000)
   }
 
   /** Load 1/2 program rom bank of 8KB */
   def load8kRomBank(halfBank: Int, address: Int): Unit = {
-    if(halfBank % 2 == 0) {
-      nes.rom.prgRom((halfBank/2) % nes.rom.getPrgRomSize).take(0x2000).copyToArray(nes.cpu.memory,address,0x2000)
+    if (halfBank % 2 == 0) {
+      nes.rom.prgRom((halfBank / 2) % nes.rom.getPrgRomSize).take(0x2000).copyToArray(nes.cpu.memory, address, 0x2000)
     } else {
-      nes.rom.prgRom((halfBank/2) % nes.rom.getPrgRomSize).drop(0x2000).copyToArray(nes.cpu.memory,address,0x2000)
+      nes.rom.prgRom((halfBank / 2) % nes.rom.getPrgRomSize).drop(0x2000).copyToArray(nes.cpu.memory, address, 0x2000)
     }
   }
 
@@ -350,11 +351,12 @@ class Mapper(mapper_type: Int,nes: NES) {
     * the graphic bank is broken in 2 and loaded in 2 tiles
     * the first parameter is the number of the first half bank (4KB)
     */
-  def loadVromBank(halfBank: Int, address: Int): Unit = { //default: 8KB banks
+  def loadVromBank(halfBank: Int, address: Int): Unit = {
+    //default: 8KB banks
     if (nes.rom.getChrRomSize != 0) {
       //TODO or not: nes.ppu.triggerRendering
-      load4KVromBank((halfBank) % (nes.rom.getChrRomSize*2), address) //the size of our tiles are 4K (0x1000)
-      load4KVromBank((halfBank + 1) % (nes.rom.getChrRomSize*2),address + 0x1000)
+      load4KVromBank((halfBank) % (nes.rom.getChrRomSize * 2), address) //the size of our tiles are 4K (0x1000)
+      load4KVromBank((halfBank + 1) % (nes.rom.getChrRomSize * 2), address + 0x1000)
     }
   }
 
@@ -362,14 +364,14 @@ class Mapper(mapper_type: Int,nes: NES) {
   def load4KVromBank(halfBank: Int, address: Int): Unit = {
     if (nes.rom.getChrRomSize != 0) {
       //TODO: nes.ppu.triggerRendering
-      if(halfBank % 2 == 0) {
-        nes.rom.chrRom((halfBank/2) % nes.rom.getChrRomSize).take(0x1000).copyToArray(nes.ppu.vramMem,address,0x1000)
+      if (halfBank % 2 == 0) {
+        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).take(0x1000).copyToArray(nes.ppu.vramMem, address, 0x1000)
       } else {
-        nes.rom.chrRom((halfBank/2) % nes.rom.getChrRomSize).drop(0x1000).copyToArray(nes.ppu.vramMem,address,0x1000)
+        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).drop(0x1000).copyToArray(nes.ppu.vramMem, address, 0x1000)
       }
 
-      val vromTile: Array[Tile] = nes.rom.vromTile(halfBank % (nes.rom.getChrRomSize*2))
-      vromTile.copyToArray(nes.ppu.ptTile,address >> 4,0x100)
+      val vromTile: Array[Tile] = nes.rom.vromTile(halfBank % (nes.rom.getChrRomSize * 2))
+      vromTile.copyToArray(nes.ppu.ptTile, address >> 4, 0x100)
     }
   }
 
@@ -378,12 +380,12 @@ class Mapper(mapper_type: Int,nes: NES) {
     if (nes.rom.getChrRomSize != 0) {
       //TODO: nes.ppu.triggerRendering
       val offset = 0x800 * (quarterBank % 4)
-      nes.rom.chrRom((quarterBank/4) % nes.rom.getChrRomSize).slice(offset,offset+0x800).copyToArray(nes.ppu.vramMem,address,0x800)
+      nes.rom.chrRom((quarterBank / 4) % nes.rom.getChrRomSize).slice(offset, offset + 0x800).copyToArray(nes.ppu.vramMem, address, 0x800)
       // Update tiles:
-      val vromTile: Array[Tile] = nes.rom.vromTile((quarterBank/2) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
+      val vromTile: Array[Tile] = nes.rom.vromTile((quarterBank / 2) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
       val baseIndex = address >> 4
-      for(i <- 0 to 0x80) {
-        nes.ppu.ptTile(baseIndex+i) = vromTile( ((quarterBank%2) << 7) + i)
+      for (i <- 0 to 0x80) {
+        nes.ppu.ptTile(baseIndex + i) = vromTile(((quarterBank % 2) << 7) + i)
       }
     }
   }
@@ -393,12 +395,12 @@ class Mapper(mapper_type: Int,nes: NES) {
     if (nes.rom.getChrRomSize != 0) {
       //TODO: nes.ppu.triggerRendering
       val offset = 0x400 * (eighthBank % 8)
-      nes.rom.chrRom((eighthBank/8) % nes.rom.getChrRomSize).slice(offset,offset+0x400).copyToArray(nes.ppu.vramMem,address,0x400)
+      nes.rom.chrRom((eighthBank / 8) % nes.rom.getChrRomSize).slice(offset, offset + 0x400).copyToArray(nes.ppu.vramMem, address, 0x400)
       // Update tiles:
-      val vromTile: Array[Tile] = nes.rom.vromTile((eighthBank/4) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
+      val vromTile: Array[Tile] = nes.rom.vromTile((eighthBank / 4) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
       val baseIndex = address >> 4
-      for(i <- 0 to 0x40) {
-        nes.ppu.ptTile(baseIndex+i) = vromTile( ((eighthBank%4) << 6) + i)
+      for (i <- 0 to 0x40) {
+        nes.ppu.ptTile(baseIndex + i) = vromTile(((eighthBank % 4) << 6) + i)
       }
     }
   }
@@ -411,5 +413,127 @@ class Mapper(mapper_type: Int,nes: NES) {
     // Does nothing. This is used by MMC2.
   }
 
+  case object MMC1 {
+    def write: Unit = {
+      
+    }
+  }
+
+  //Mapper for Castelvania 3, not yet fully working
+  case object MMC5 {
+    var prg_size: Int = 0
+    var chr_size: Int = 0
+    var sram_we_a: Int = 0
+    var sram_we_b: Int =  0
+    var graphic_mode: Int = 0
+    var nametable_mode: Int = 0
+    var nametable_type: Array[Int] = _
+    var fill_chr: Int = 0
+    var fill_pal: Int = 0
+    var chr_mode: Int = 0
+    var chr_page: Array[Array[Int]] = _
+    var split_control: Int = 0
+    var split_scroll: Int = 0
+    var split_page: Int = 0
+    var irq_line: Int = 0
+    var irq_enable: Int = 0
+    var irq_status: Int = 0
+    var mult_a: Int = 0
+    var mult_b: Int = 0
+
+    def write(address: Int, value: Byte): Unit = {
+      // Writes to addresses other than MMC registers are handled by NoMapper.
+      if (address < 0x5000) {
+        write(address, value)
+      }
+      else {
+        (address: @switch) match {
+          case 0x5100 => prg_size = value & 3
+          case 0x5101 => chr_size = value & 3
+          case 0x5102 => sram_we_a = value & 3
+          case 0x5103 => sram_we_b = value & 3
+          case 0x5104 => graphic_mode = value & 3
+          case 0x5105 =>
+            nametable_mode = value
+            nametable_type(0) = value & 3
+            //load1kVromBank(value & 3, 0x2000)
+            var offset = value >> 2
+            nametable_type(1) = offset & 3
+            load1kVromBank(offset & 3, 0x2400)
+            offset >>= 2
+            nametable_type(2) = offset & 3
+            load1kVromBank(offset & 3, 0x2800)
+            offset >>= 2
+            nametable_type(3) = offset & 3
+            load1kVromBank(offset & 3, 0x2C00)
+          case 0x5106 => fill_chr = value
+          case 0x5107 => fill_pal = value & 3
+          case 0x5113 => //SetBank_SRAM(3, value & 3)
+          case 0x5114 | 0x5115 | 0x5116 | 0x5117 =>
+            //SetBank_CPU(address, value)
+          case 0x5120 | 0x5121 | 0x5122 | 0x5123 | 0x5124 | 0x5125 | 0x5126 | 0x5127=>
+            chr_mode = 0
+            chr_page(0)(address & 7) = value
+            //SetBank_PPU ()
+          case 0x5128 | 0x5129 | 0x512A | 0x512B =>
+            chr_mode = 1
+            chr_page(1)((address & 3) + 0) = value
+            chr_page(1)((address & 3) + 4) = value
+            //SetBank_PPU ()
+          case 0x5200 => split_control = value
+          case 0x5201 => split_scroll = value
+          case 0x5202 => split_page = value & 0x3F
+          case 0x5203 =>
+            irq_line = value
+            nes.cpu.clearIRQ
+          case 0x5204 =>
+            irq_enable = value
+            nes.cpu.clearIRQ
+          case 0x5205 => mult_a = value
+          case 0x5206 => mult_b = value
+          case _ =>
+            if (address >= 0x5000 && address <= 0x5015) {
+              nes.papu.exWrite(address, value)
+            } else if (address >= 0x5C00 && address <= 0x5FFF) {
+              if (graphic_mode == 2) {
+                // ExRAM
+                // vram write
+              } else if (graphic_mode != 3) {
+                // Split,ExGraphic
+                if ((irq_status & 0x40) != 0) {
+                  // vram write
+                } else {
+                  // vram write
+                }
+              }
+            } else if (address >= 0x6000 && address <= 0x7FFF) {
+              if (sram_we_a == 2 && sram_we_b == 1) {
+                // additional ram write
+              }
+            }
+        }
+      }
+    }
+
+    def loadRom: Unit = {
+      if (!nes.rom.checkRom) {
+        scalajs.js.Dynamic.global.alert("UNROM: Invalid ROM! Unable to load.")
+      } else {
+
+        // Load PRG-ROM:
+        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0x8000)
+        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xA000)
+        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xC000)
+        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xE000)
+
+        // Load CHR-ROM:
+        loadCHRROM
+
+        // Do Reset-Interrupt:
+        nes.cpu.requestIrq(2)
+      }
+    }
+  }
 
 }
+
