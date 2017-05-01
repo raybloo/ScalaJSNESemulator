@@ -6,7 +6,7 @@ package Emulator
 class PPU {
 
 
-  var vramMem = null
+  var vramMem: Array[Byte] = null
   var spriteMem = null
   var vramAddress = null
   var vramTmpAddress = null
@@ -67,7 +67,7 @@ class PPU {
   var hitSpr0 = null
   var sprPalette = null
   var imgPalette = null
-  var ptTile = null
+  var ptTile: Array[Tile] = null
   var ntable1 = null
   var nameTable = null
   var vramMirrorTable = null
@@ -96,5 +96,11 @@ class PPU {
   def setStatusFlag(flag: Int,value: Boolean): Unit = {
 
   }
+
+
+
+}
+
+class Tile {
 
 }

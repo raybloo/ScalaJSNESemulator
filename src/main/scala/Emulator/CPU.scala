@@ -198,7 +198,7 @@ class CPU(nes: NES) {
   /** Emulate one instruction of the cpu
     *  return number of cycles
     */
-  def emulate(): Int = {
+  def emulate: Int = {
     var temp: Int = 0
     var add: Byte = 0
     if(irqRequested) {
@@ -245,7 +245,7 @@ class CPU(nes: NES) {
     (addrMode: @switch) match {
       case OpData.ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
         addr = load1Word(opaddr+2)
-      case OpData.RELATIVE => //Relative mode
+      case OpData.RELATIVE => //Relative mode, address is relative to pc
         addr = load1Word(opaddr+2)
         if(addr<0x80) {
           addr += pc
@@ -655,6 +655,11 @@ class CPU(nes: NES) {
   /** Wrap the stack pointer */
   def stackwrap = {
     sp = 0x0100 | (sp&0xff)
+  }
+
+  /* Increment the number of cycle to halt */
+  def haltCycles(cycles: Int): Unit = {
+    cyclesToHalt += cycles
   }
 
   /** Contains all the data about the opcode in 4 arrays

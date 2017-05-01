@@ -21,17 +21,17 @@ class NES() {
   var papu: PAPU = new PAPU
 
   // Init. all default emulator value
-  private var frameRate: Double = 60.0
-  private var frameTime: Double = 1000.0/frameRate
-  private var frameCount: Int = 0
-  private var fpsInterval: Double = 500.0
-  private var fpsLastTime: Double = 0.0
-  private var intervalFpsDisplay: SetIntervalHandle = null
-  private var intervalFrame: SetIntervalHandle = null
-  private var isRunning: Boolean = false
-  private var emulateSound: Boolean = true
-  private var showDisplay: Boolean = true
-  private var oldRomUrl: String = ""
+  var frameRate: Double = 60.0
+  var frameTime: Double = 1000.0/frameRate
+  var frameCount: Int = 0
+  var fpsInterval: Double = 500.0
+  var fpsLastTime: Double = 0.0
+  var intervalFpsDisplay: SetIntervalHandle = null
+  var intervalFrame: SetIntervalHandle = null
+  var isRunning: Boolean = false
+  var emulateSound: Boolean = true
+  var showDisplay: Boolean = true
+  var oldRomUrl: String = ""
 
   ui.updateStatus("Ready to load ROM")
 
@@ -65,7 +65,7 @@ class NES() {
     while(!stop) {
       if (cpu.cyclesToHalt == 0) {
         // Execute a CPU instruction
-        cycles = cpu.emulate()
+        cycles = cpu.emulate
         if(emulateSound) {
           //TODO implement when papu is functionnal
         }

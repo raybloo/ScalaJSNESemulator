@@ -262,7 +262,7 @@ class Mapper(mapper_type: Int,nes: NES) {
     ret
   }
 
-  /** Load ROM if valid*/
+  /** Load ROM if valid */
   def loadROM: Unit = {
     if (!nes.rom.checkRom || nes.rom.getPrgRomSize < 1) {
       Dynamic.global.alert("NoMapper: Invalid ROM! Unable to load.")
@@ -274,19 +274,21 @@ class Mapper(mapper_type: Int,nes: NES) {
     }
   }
 
+  /** Load program rom into memory*/
   def loadPRGROM: Unit = {
     if (nes.rom.getPrgRomSize > 1) {
       // Load the two first banks into memory.
-      //TODO: loadRomBank(0, 0x8000)
-      //TODO: loadRomBank(1, 0xC000)
+      loadRomBank(0, 0x8000)
+      loadRomBank(1, 0xC000)
     }
     else {
       // Load the one bank into both memory locations:
-      //TODO: loadRomBank(0, 0x8000)
-      //TODO: loadRomBank(0, 0xC000)
+      loadRomBank(0, 0x8000)
+      loadRomBank(0, 0xC000)
     }
   }
 
+  /** Load graphical rom into memory */
   def loadCHRROM: Unit = {
     if (nes.rom.getChrRomSize > 0) {
       //There is something weird with this if() condition
@@ -299,8 +301,8 @@ class Mapper(mapper_type: Int,nes: NES) {
         //TODO: loadVromBank(0,0x0000)
         //TODO: loadVromBank(0,0x1000)
       //} else {
-        //TODO: loadVromBank(0,0x0000)
-        //TODO: loadVromBank(1,0x1000)
+        load4KVromBank(0,0x0000)
+        load4KVromBank(1,0x1000)
       //}
     }
     else {
@@ -308,6 +310,7 @@ class Mapper(mapper_type: Int,nes: NES) {
     }
   }
 
+  /** Load battery ram if any. Unused for now*/
   def loadBatteryRam: Unit = {
     if (nes.rom.hasBatteryRam) {
       /*
@@ -319,5 +322,94 @@ class Mapper(mapper_type: Int,nes: NES) {
       */
     } //I'll need more time to implement this, since I don't quite understand this
   }
+
+  /** Load one program rom bank of 16KB */
+  def loadRomBank(bank: Int, address: Int): Unit =  { //default: 16KB banks
+    // Loads a ROM bank into the specified address.
+    //var data = this.nes.rom.rom[bank];
+    //cpuMem.write(address,data,data.length);
+    nes.rom.prgRom(bank % nes.rom.getPrgRomSize).copyToArray(nes.cpu.memory,address,0x4000)
+  }
+
+  /** Load 2 program rom banks of a total of 32KB */
+  def load32kRomBank(bank: Int, address: Int): Unit = {
+    loadRomBank((bank*2) % nes.rom.getPrgRomSize, address)
+    loadRomBank((bank*2+1) % nes.rom.getPrgRomSize, address+0x4000)
+  }
+
+  /** Load 1/2 program rom bank of 8KB */
+  def load8kRomBank(halfBank: Int, address: Int): Unit = {
+    if(halfBank % 2 == 0) {
+      nes.rom.prgRom((halfBank/2) % nes.rom.getPrgRomSize).take(0x2000).copyToArray(nes.cpu.memory,address,0x2000)
+    } else {
+      nes.rom.prgRom((halfBank/2) % nes.rom.getPrgRomSize).drop(0x2000).copyToArray(nes.cpu.memory,address,0x2000)
+    }
+  }
+
+  /** Load 1 graphic rom bank of 8KB
+    * the graphic bank is broken in 2 and loaded in 2 tiles
+    * the first parameter is the number of the first half bank (4KB)
+    */
+  def loadVromBank(halfBank: Int, address: Int): Unit = { //default: 8KB banks
+    if (nes.rom.getChrRomSize != 0) {
+      //TODO or not: nes.ppu.triggerRendering
+      load4KVromBank((halfBank) % (nes.rom.getChrRomSize*2), address) //the size of our tiles are 4K (0x1000)
+      load4KVromBank((halfBank + 1) % (nes.rom.getChrRomSize*2),address + 0x1000)
+    }
+  }
+
+  /** Load 1/2 graphic rom bank of 4KB and set a new Tile for it */
+  def load4KVromBank(halfBank: Int, address: Int): Unit = {
+    if (nes.rom.getChrRomSize != 0) {
+      //TODO: nes.ppu.triggerRendering
+      if(halfBank % 2 == 0) {
+        nes.rom.chrRom((halfBank/2) % nes.rom.getChrRomSize).take(0x1000).copyToArray(nes.ppu.vramMem,address,0x1000)
+      } else {
+        nes.rom.chrRom((halfBank/2) % nes.rom.getChrRomSize).drop(0x1000).copyToArray(nes.ppu.vramMem,address,0x1000)
+      }
+
+      val vromTile: Array[Tile] = nes.rom.vromTile(halfBank % (nes.rom.getChrRomSize*2))
+      vromTile.copyToArray(nes.ppu.ptTile,address >> 4,0x100)
+    }
+  }
+
+  /** Load 1/4 graphic rom bank of 2KB and update corresponding tile */
+  def load2kVromBank(quarterBank: Int, address: Int): Unit = {
+    if (nes.rom.getChrRomSize != 0) {
+      //TODO: nes.ppu.triggerRendering
+      val offset = 0x800 * (quarterBank % 4)
+      nes.rom.chrRom((quarterBank/4) % nes.rom.getChrRomSize).slice(offset,offset+0x800).copyToArray(nes.ppu.vramMem,address,0x800)
+      // Update tiles:
+      val vromTile: Array[Tile] = nes.rom.vromTile((quarterBank/2) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
+      val baseIndex = address >> 4
+      for(i <- 0 to 0x80) {
+        nes.ppu.ptTile(baseIndex+i) = vromTile( ((quarterBank%2) << 7) + i)
+      }
+    }
+  }
+
+  /** Load 1/8 graphic rom bank of 1KB and update corresponding tile */
+  def load1kVromBank(eighthBank: Int, address: Int): Unit = {
+    if (nes.rom.getChrRomSize != 0) {
+      //TODO: nes.ppu.triggerRendering
+      val offset = 0x400 * (eighthBank % 8)
+      nes.rom.chrRom((eighthBank/8) % nes.rom.getChrRomSize).slice(offset,offset+0x400).copyToArray(nes.ppu.vramMem,address,0x400)
+      // Update tiles:
+      val vromTile: Array[Tile] = nes.rom.vromTile((eighthBank/4) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
+      val baseIndex = address >> 4
+      for(i <- 0 to 0x40) {
+        nes.ppu.ptTile(baseIndex+i) = vromTile( ((eighthBank%4) << 6) + i)
+      }
+    }
+  }
+
+  def clockIrqCounter: Unit = {
+    // Does nothing. This is used by the MMC3 mapper.
+  }
+
+  def latchAccess(address: Int): Unit = {
+    // Does nothing. This is used by MMC2.
+  }
+
 
 }
