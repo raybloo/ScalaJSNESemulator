@@ -416,28 +416,31 @@ abstract class Mapper(nes: NES) {
 
 }
 
+//Default mapper, when mapper is not found, not supported or not yet implemented
+class NoMapper(nes: NES) extends Mapper(nes) {} //mapper number 0
+
 //Most common mapper: Nintendo MMC1
 class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
 
   // 5-bit buffer:
-  var regBuffer = 0
-  var regBufferCounter = 0
+  var regBuffer: Int = 0
+  var regBufferCounter: Int = 0
 
   // Register 0:
-  var mirroring = 0
-  var oneScreenMirroring = 0
-  var prgSwitchingArea = 1
-  var prgSwitchingSize = 1
-  var vromSwitchingSize = 0
+  var mirroring: Int = 0
+  var oneScreenMirroring: Int = 0
+  var prgSwitchingArea: Int = 1
+  var prgSwitchingSize: Int = 1
+  var vromSwitchingSize: Int = 0
 
   // Register 1:
-  var romSelectionReg0 = 0
+  var romSelectionReg0: Int = 0
 
   // Register 2:
-  var romSelectionReg1 = 0
+  var romSelectionReg1: Int = 0
 
   // Register 3:
-  var romBankSelect = 0
+  var romBankSelect: Int = 0
 
   override def reset: Unit = {
     super.reset
@@ -471,7 +474,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
         regBuffer = 0
 
         // Reset register:
-        if (getRegNumber(address) === 0) {
+        if (getRegNumber(address) == 0) {
 
           prgSwitchingArea = 1
           prgSwitchingSize = 1
@@ -498,87 +501,88 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
   }
 
   def setReg(reg: Int,value: Int): Unit = {
-    match (reg: @switch) {
+
+    (reg: @switch) match {
       case 0 =>
-      // Mirroring:
-      val tmp: Int = value & 3
-      if (tmp != mirroring) {
-        // Set mirroring:
-        mirroring = tmp
-        if ((mirroring & 2) == 0) {
-          // SingleScreen mirroring overrides the other setting:
-          nes.ppu.setMirroring(nes.rom.SinglescreenMirroring)
+        // Mirroring:
+        val tmp: Int = (value & 3)
+        if (tmp != mirroring) {
+          // Set mirroring:
+          mirroring = tmp
+          if ((mirroring & 2) == 0) {
+            // SingleScreen mirroring overrides the other setting:
+            //nes.ppu.setMirroring(nes.rom.SinglescreenMirroring)
+          }
+          // Not overridden by SingleScreen mirroring.
+          else if ((mirroring & 1) != 0) {
+            //nes.ppu.setMirroring(nes.rom.HorizontalMirroring)
+          }
+          else {
+            //nes.ppu.setMirroring(nes.rom.VerticalMirroring)
+          }
         }
-        // Not overridden by SingleScreen mirroring.
-        else if ((mirroring & 1) != 0) {
-          nes.ppu.setMirroring(nes.rom.HorizontalMirroring)
-        }
-        else {
-          nes.ppu.setMirroring(nes.rom.VerticalMirroring)
-        }
-      }
 
-      // PRG Switching Area
-      prgSwitchingArea = (value >> 2) & 1
+        // PRG Switching Area
+        prgSwitchingArea = ((value >> 2) & 1)
 
-      // PRG Switching Size:
-      prgSwitchingSize = (value >> 3) & 1
+        // PRG Switching Size:
+        prgSwitchingSize = ((value >> 3) & 1)
 
-      // VROM Switching Size:
-      vromSwitchingSize = (value >> 4) & 1
+        // VROM Switching Size:
+        vromSwitchingSize = ((value >> 4) & 1)
 
       case 1 =>
-      // ROM selection:
-      romSelectionReg0 = (value >> 4) & 1
+        // ROM selection:
+        romSelectionReg0 = ((value >> 4) & 1)
 
-      // Check whether the cart has VROM:
-      if (nes.rom.getChrRomSize > 0) {
+        // Check whether the cart has VROM:
+        if (nes.rom.getChrRomSize > 0) {
 
-        // Select VROM bank at 0x0000:
-        if (vromSwitchingSize == 0) {
+          // Select VROM bank at 0x0000:
+          if (vromSwitchingSize == 0) {
 
-          // Swap 8kB VROM:
-          if (romSelectionReg0 == 0) {
-            loadVromBank((value & 0xF), 0x0000)
+            // Swap 8kB VROM:
+            if (romSelectionReg0 == 0) {
+              loadVromBank((value & 0xF), 0x0000)
+            }
+            else {
+              loadVromBank(nes.rom.getChrRomSize + (value & 0xF),0x0000)
+            }
+
           }
           else {
-            loadVromBank(nes.rom.getChrRomSize + (value & 0xF),0x0000)
-          }
-
-        }
-        else {
-          // Swap 4kB VROM:
-          if (romSelectionReg0 == 0) {
-            load4KVromBank((value & 0xF), 0x0000)
-          }
-          else {
-            load4KVromBank(nes.rom.getChrRomSize + (value & 0xF), 0x0000)
+            // Swap 4kB VROM:
+            if (romSelectionReg0 == 0) {
+              load4KVromBank((value & 0xF), 0x0000)
+            }
+            else {
+              load4KVromBank(nes.rom.getChrRomSize + (value & 0xF), 0x0000)
+            }
           }
         }
-      }
 
       case 2 =>
-      // ROM selection:
-      romSelectionReg1 = (value >> 4) & 1
+        // ROM selection:
+        romSelectionReg1 = ((value >> 4) & 1)
 
-      // Check whether the cart has VROM:
-      if (nes.rom.getChrRomSize > 0) {
+        // Check whether the cart has VROM:
+        if (nes.rom.getChrRomSize > 0) {
 
-        // Select VROM bank at 0x1000:
-        if (vromSwitchingSize == 1) {
-          // Swap 4kB of VROM:
-          if (romSelectionReg1 == 0) {
-            load4KVromBank((value & 0xF), 0x1000)
-          }
-          else {
-            load4KVromBank(nes.rom.getChrRomSize + (value & 0xF), 0x1000)
+          // Select VROM bank at 0x1000:
+          if (vromSwitchingSize == 1) {
+            // Swap 4kB of VROM:
+            if (romSelectionReg1 == 0) {
+              load4KVromBank((value & 0xF), 0x1000)
+            }
+            else {
+              load4KVromBank(nes.rom.getChrRomSize + (value & 0xF), 0x1000)
+            }
           }
         }
-      }
       case _ =>
         // Select ROM bank:
         // -------------------------
-        val tmp: Int = value & 0xF
+        val tmp: Int = (value & 0xF)
         var bank: Int = 0
         var baseBank: Int = 0
 
@@ -655,8 +659,8 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
 }
 
 //Mapper for Castelvania 3, not yet fully working: Nintendo MMC5
-class MMC5(nes: NES) extends Mapper(nes) { //mapper number 4
-  var prg_size: Int = 0
+class MMC5(nes: NES) extends Mapper(nes) { //mapper number 5
+var prg_size: Int = 0
   var chr_size: Int = 0
   var sram_we_a: Int = 0
   var sram_we_b: Int =  0

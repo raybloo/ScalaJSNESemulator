@@ -188,7 +188,7 @@ class ROM(nes: NES) {
   def createMapper: Mapper = {
     val num = getMapperNum
     if(isMapperSupported(num)) {
-      new Mapper(nes) //TODO implement according to mapper modification
+      nes.mapperTable(num)()
     } else {
       Dynamic.global.console.log(s"Unsupported mapper, $num")
       null

@@ -32,6 +32,10 @@ class NES() {
   var emulateSound: Boolean = true
   var showDisplay: Boolean = true
   var oldRomUrl: String = ""
+  var mapperTable: Array[() => Mapper] = (for(i <- 0 to 92) yield (() => new NoMapper(this))).toArray
+
+  mapperTable(1) = (() => new MMC1(this))
+  mapperTable(5) = (() => new MMC5(this))
 
   ui.updateStatus("Ready to load ROM")
 
