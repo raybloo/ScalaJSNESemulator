@@ -7,7 +7,7 @@ import scala.scalajs.js.Dynamic
   * It acts like like a cartridge board. There are
   * different types of mappers that vary from one game to another
   */
-abstract class Mapper(mapper_type: Int,nes: NES) {
+abstract class Mapper(nes: NES) {
 
   //Devices State
   var joy1StrobeState = 0
@@ -413,127 +413,360 @@ abstract class Mapper(mapper_type: Int,nes: NES) {
     // Does nothing. This is used by MMC2.
   }
 
-  case object MMC1 {
-    def write: Unit = {
-      
-    }
+
+}
+
+//Most common mapper: Nintendo MMC1
+class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
+
+  // 5-bit buffer:
+  var regBuffer = 0
+  var regBufferCounter = 0
+
+  // Register 0:
+  var mirroring = 0
+  var oneScreenMirroring = 0
+  var prgSwitchingArea = 1
+  var prgSwitchingSize = 1
+  var vromSwitchingSize = 0
+
+  // Register 1:
+  var romSelectionReg0 = 0
+
+  // Register 2:
+  var romSelectionReg1 = 0
+
+  // Register 3:
+  var romBankSelect = 0
+
+  override def reset: Unit = {
+    super.reset
+
+    regBuffer = 0
+    regBufferCounter = 0
+
+    mirroring = 0
+    oneScreenMirroring = 0
+    prgSwitchingArea = 1
+    prgSwitchingSize = 1
+    vromSwitchingSize = 0
+
+    romSelectionReg0 = 0
+
+    romSelectionReg1 = 0
+
+    romBankSelect = 0
   }
 
-  //Mapper for Castelvania 3, not yet fully working
-  case object MMC5 {
-    var prg_size: Int = 0
-    var chr_size: Int = 0
-    var sram_we_a: Int = 0
-    var sram_we_b: Int =  0
-    var graphic_mode: Int = 0
-    var nametable_mode: Int = 0
-    var nametable_type: Array[Int] = _
-    var fill_chr: Int = 0
-    var fill_pal: Int = 0
-    var chr_mode: Int = 0
-    var chr_page: Array[Array[Int]] = _
-    var split_control: Int = 0
-    var split_scroll: Int = 0
-    var split_page: Int = 0
-    var irq_line: Int = 0
-    var irq_enable: Int = 0
-    var irq_status: Int = 0
-    var mult_a: Int = 0
-    var mult_b: Int = 0
+  override def write(address: Int, value: Byte): Unit = {
+    // Writes to addresses other than MMC registers are handled by NoMapper.
+    if (address < 0x8000) {
+      super.write(address, value)
+    } else {
+      // See what should be done with the written value:
+      if ((value & 128) != 0) {
 
-    def write(address: Int, value: Byte): Unit = {
-      // Writes to addresses other than MMC registers are handled by NoMapper.
-      if (address < 0x5000) {
-        write(address, value)
+        // Reset buffering:
+        regBufferCounter = 0
+        regBuffer = 0
+
+        // Reset register:
+        if (getRegNumber(address) === 0) {
+
+          prgSwitchingArea = 1
+          prgSwitchingSize = 1
+
+        }
       }
       else {
-        (address: @switch) match {
-          case 0x5100 => prg_size = value & 3
-          case 0x5101 => chr_size = value & 3
-          case 0x5102 => sram_we_a = value & 3
-          case 0x5103 => sram_we_b = value & 3
-          case 0x5104 => graphic_mode = value & 3
-          case 0x5105 =>
-            nametable_mode = value
-            nametable_type(0) = value & 3
-            //load1kVromBank(value & 3, 0x2000)
-            var offset = value >> 2
-            nametable_type(1) = offset & 3
-            load1kVromBank(offset & 3, 0x2400)
-            offset >>= 2
-            nametable_type(2) = offset & 3
-            load1kVromBank(offset & 3, 0x2800)
-            offset >>= 2
-            nametable_type(3) = offset & 3
-            load1kVromBank(offset & 3, 0x2C00)
-          case 0x5106 => fill_chr = value
-          case 0x5107 => fill_pal = value & 3
-          case 0x5113 => //SetBank_SRAM(3, value & 3)
-          case 0x5114 | 0x5115 | 0x5116 | 0x5117 =>
-            //SetBank_CPU(address, value)
-          case 0x5120 | 0x5121 | 0x5122 | 0x5123 | 0x5124 | 0x5125 | 0x5126 | 0x5127=>
-            chr_mode = 0
-            chr_page(0)(address & 7) = value
-            //SetBank_PPU ()
-          case 0x5128 | 0x5129 | 0x512A | 0x512B =>
-            chr_mode = 1
-            chr_page(1)((address & 3) + 0) = value
-            chr_page(1)((address & 3) + 4) = value
-            //SetBank_PPU ()
-          case 0x5200 => split_control = value
-          case 0x5201 => split_scroll = value
-          case 0x5202 => split_page = value & 0x3F
-          case 0x5203 =>
-            irq_line = value
-            nes.cpu.clearIRQ
-          case 0x5204 =>
-            irq_enable = value
-            nes.cpu.clearIRQ
-          case 0x5205 => mult_a = value
-          case 0x5206 => mult_b = value
-          case _ =>
-            if (address >= 0x5000 && address <= 0x5015) {
-              nes.papu.exWrite(address, value)
-            } else if (address >= 0x5C00 && address <= 0x5FFF) {
-              if (graphic_mode == 2) {
-                // ExRAM
-                // vram write
-              } else if (graphic_mode != 3) {
-                // Split,ExGraphic
-                if ((irq_status & 0x40) != 0) {
-                  // vram write
-                } else {
-                  // vram write
-                }
-              }
-            } else if (address >= 0x6000 && address <= 0x7FFF) {
-              if (sram_we_a == 2 && sram_we_b == 1) {
-                // additional ram write
-              }
-            }
+
+        // Continue buffering:
+        //regBuffer = (regBuffer & (0xFF-(1<<regBufferCounter))) | ((value & (1<<regBufferCounter))<<regBufferCounter)
+        regBuffer = (regBuffer & (0xFF - (1 << regBufferCounter))) | ((value & 1) << regBufferCounter)
+        regBufferCounter += 1
+
+        if (regBufferCounter == 5) {
+          // Use the buffered value:
+          setReg(getRegNumber(address), regBuffer)
+
+          // Reset buffer:
+          regBuffer = 0
+          regBufferCounter = 0
         }
       }
     }
+  }
 
-    def loadRom: Unit = {
-      if (!nes.rom.checkRom) {
-        scalajs.js.Dynamic.global.alert("UNROM: Invalid ROM! Unable to load.")
-      } else {
+  def setReg(reg: Int,value: Int): Unit = {
+    match (reg: @switch) {
+      case 0 =>
+      // Mirroring:
+      val tmp: Int = value & 3
+      if (tmp != mirroring) {
+        // Set mirroring:
+        mirroring = tmp
+        if ((mirroring & 2) == 0) {
+          // SingleScreen mirroring overrides the other setting:
+          nes.ppu.setMirroring(nes.rom.SinglescreenMirroring)
+        }
+        // Not overridden by SingleScreen mirroring.
+        else if ((mirroring & 1) != 0) {
+          nes.ppu.setMirroring(nes.rom.HorizontalMirroring)
+        }
+        else {
+          nes.ppu.setMirroring(nes.rom.VerticalMirroring)
+        }
+      }
 
-        // Load PRG-ROM:
-        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0x8000)
-        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xA000)
-        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xC000)
-        load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xE000)
+      // PRG Switching Area
+      prgSwitchingArea = (value >> 2) & 1
 
-        // Load CHR-ROM:
-        loadCHRROM
+      // PRG Switching Size:
+      prgSwitchingSize = (value >> 3) & 1
 
-        // Do Reset-Interrupt:
-        nes.cpu.requestIrq(2)
+      // VROM Switching Size:
+      vromSwitchingSize = (value >> 4) & 1
+
+      case 1 =>
+      // ROM selection:
+      romSelectionReg0 = (value >> 4) & 1
+
+      // Check whether the cart has VROM:
+      if (nes.rom.getChrRomSize > 0) {
+
+        // Select VROM bank at 0x0000:
+        if (vromSwitchingSize == 0) {
+
+          // Swap 8kB VROM:
+          if (romSelectionReg0 == 0) {
+            loadVromBank((value & 0xF), 0x0000)
+          }
+          else {
+            loadVromBank(nes.rom.getChrRomSize + (value & 0xF),0x0000)
+          }
+
+        }
+        else {
+          // Swap 4kB VROM:
+          if (romSelectionReg0 == 0) {
+            load4KVromBank((value & 0xF), 0x0000)
+          }
+          else {
+            load4KVromBank(nes.rom.getChrRomSize + (value & 0xF), 0x0000)
+          }
+        }
+      }
+
+      case 2 =>
+      // ROM selection:
+      romSelectionReg1 = (value >> 4) & 1
+
+      // Check whether the cart has VROM:
+      if (nes.rom.getChrRomSize > 0) {
+
+        // Select VROM bank at 0x1000:
+        if (vromSwitchingSize == 1) {
+          // Swap 4kB of VROM:
+          if (romSelectionReg1 == 0) {
+            load4KVromBank((value & 0xF), 0x1000)
+          }
+          else {
+            load4KVromBank(nes.rom.getChrRomSize + (value & 0xF), 0x1000)
+          }
+        }
+      }
+      case _ =>
+        // Select ROM bank:
+        // -------------------------
+        val tmp: Int = value & 0xF
+        var bank: Int = 0
+        var baseBank: Int = 0
+
+        if (nes.rom.getPrgRomSize >= 32) {
+          // 1024 kB cart
+          if (vromSwitchingSize == 0) {
+            if (romSelectionReg0 == 1) {
+              baseBank = 16
+            }
+          }
+          else {
+            baseBank = (romSelectionReg0 | (romSelectionReg1 << 1)) << 3
+          }
+        }
+        else if (nes.rom.getPrgRomSize >= 16) {
+          // 512 kB cart
+          if (romSelectionReg0 == 1) {
+            baseBank = 8
+          }
+        }
+
+        if (prgSwitchingSize == 0) {
+          // 32kB
+          bank = baseBank + (value & 0xF)
+          load32kRomBank(bank, 0x8000)
+        }
+        else {
+          // 16kB
+          bank = baseBank * 2 + (value & 0xF)
+          if (prgSwitchingArea == 0) {
+            loadRomBank(bank, 0xC000)
+          }
+          else {
+            loadRomBank(bank, 0x8000)
+          }
+        }
+    }
+  }
+
+  def getRegNumber(address: Int): Int = {
+    if (address >= 0x8000 && address <= 0x9FFF) {
+      0
+    }
+    else if (address >= 0xA000 && address <= 0xBFFF) {
+      1
+    }
+    else if (address >= 0xC000 && address <= 0xDFFF) {
+      2
+    }
+    else {
+      3
+    }
+  }
+
+  override def loadROM {
+    if (!nes.rom.checkRom) {
+      scalajs.js.Dynamic.global.alert("MMC1: Invalid ROM! Unable to load.")
+    } else {
+
+      // Load PRG-ROM:
+      loadRomBank(0, 0x8000) //   First ROM bank..
+      loadRomBank(nes.rom.getPrgRomSize - 1, 0xC000) // ..and last ROM bank.
+
+      // Load CHR-ROM:
+      loadCHRROM
+
+      // Load Battery RAM (if present):
+      loadBatteryRam
+
+      // Do Reset-Interrupt:
+      nes.cpu.requestIrq(2)
+    }
+  }
+}
+
+//Mapper for Castelvania 3, not yet fully working: Nintendo MMC5
+class MMC5(nes: NES) extends Mapper(nes) { //mapper number 4
+  var prg_size: Int = 0
+  var chr_size: Int = 0
+  var sram_we_a: Int = 0
+  var sram_we_b: Int =  0
+  var graphic_mode: Int = 0
+  var nametable_mode: Int = 0
+  var nametable_type: Array[Int] = _
+  var fill_chr: Int = 0
+  var fill_pal: Int = 0
+  var chr_mode: Int = 0
+  var chr_page: Array[Array[Int]] = _
+  var split_control: Int = 0
+  var split_scroll: Int = 0
+  var split_page: Int = 0
+  var irq_line: Int = 0
+  var irq_enable: Int = 0
+  var irq_status: Int = 0
+  var mult_a: Int = 0
+  var mult_b: Int = 0
+
+  override def write(address: Int, value: Byte): Unit = {
+    // Writes to addresses other than MMC registers are handled by NoMapper.
+    if (address < 0x5000) {
+      write(address, value)
+    }
+    else {
+      (address: @switch) match {
+        case 0x5100 => prg_size = value & 3
+        case 0x5101 => chr_size = value & 3
+        case 0x5102 => sram_we_a = value & 3
+        case 0x5103 => sram_we_b = value & 3
+        case 0x5104 => graphic_mode = value & 3
+        case 0x5105 =>
+          nametable_mode = value
+          nametable_type(0) = value & 3
+          //load1kVromBank(value & 3, 0x2000)
+          var offset = value >> 2
+          nametable_type(1) = offset & 3
+          load1kVromBank(offset & 3, 0x2400)
+          offset >>= 2
+          nametable_type(2) = offset & 3
+          load1kVromBank(offset & 3, 0x2800)
+          offset >>= 2
+          nametable_type(3) = offset & 3
+          load1kVromBank(offset & 3, 0x2C00)
+        case 0x5106 => fill_chr = value
+        case 0x5107 => fill_pal = value & 3
+        case 0x5113 => //SetBank_SRAM(3, value & 3)
+        case 0x5114 | 0x5115 | 0x5116 | 0x5117 =>
+        //SetBank_CPU(address, value)
+        case 0x5120 | 0x5121 | 0x5122 | 0x5123 | 0x5124 | 0x5125 | 0x5126 | 0x5127=>
+          chr_mode = 0
+          chr_page(0)(address & 7) = value
+        //SetBank_PPU ()
+        case 0x5128 | 0x5129 | 0x512A | 0x512B =>
+          chr_mode = 1
+          chr_page(1)((address & 3) + 0) = value
+          chr_page(1)((address & 3) + 4) = value
+        //SetBank_PPU ()
+        case 0x5200 => split_control = value
+        case 0x5201 => split_scroll = value
+        case 0x5202 => split_page = value & 0x3F
+        case 0x5203 =>
+          irq_line = value
+          nes.cpu.clearIRQ
+        case 0x5204 =>
+          irq_enable = value
+          nes.cpu.clearIRQ
+        case 0x5205 => mult_a = value
+        case 0x5206 => mult_b = value
+        case _ =>
+          if (address >= 0x5000 && address <= 0x5015) {
+            nes.papu.exWrite(address, value)
+          } else if (address >= 0x5C00 && address <= 0x5FFF) {
+            if (graphic_mode == 2) {
+              // ExRAM
+              // vram write
+            } else if (graphic_mode != 3) {
+              // Split,ExGraphic
+              if ((irq_status & 0x40) != 0) {
+                // vram write
+              } else {
+                // vram write
+              }
+            }
+          } else if (address >= 0x6000 && address <= 0x7FFF) {
+            if (sram_we_a == 2 && sram_we_b == 1) {
+              // additional ram write
+            }
+          }
       }
     }
   }
 
+  override def loadROM: Unit = {
+    if (!nes.rom.checkRom) {
+      scalajs.js.Dynamic.global.alert("UNROM: Invalid ROM! Unable to load.")
+    } else {
+
+      // Load PRG-ROM:
+      load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0x8000)
+      load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xA000)
+      load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xC000)
+      load8kRomBank(nes.rom.getPrgRomSize * 2 - 1, 0xE000)
+
+      // Load CHR-ROM:
+      loadCHRROM
+
+      // Do Reset-Interrupt:
+      nes.cpu.requestIrq(2)
+    }
+  }
 }
 
