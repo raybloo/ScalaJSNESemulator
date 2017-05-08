@@ -655,9 +655,6 @@ class CPU(nes: NES) {
   def stackwrap = {
     sp = 0x0100 | (sp&0xff)
   }
-  
-  def haltCycles(x: Int): Unit = {
-  }
 
   /* Increment the number of cycle to halt */
   def haltCycles(cycles: Int): Unit = {

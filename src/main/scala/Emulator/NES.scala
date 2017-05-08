@@ -9,15 +9,15 @@ import scala.scalajs.js.timers.SetIntervalHandle
   */
 class NES() {
   // Init. all instances and state variables used for the emulator
-  private val ui: UI = new UI
-  private var program: Program = null
+  val ui: UI = new UI
+  var program: Program = null
 
   // Init. accessible components
   var cpu: CPU = new CPU(this)
   var rom: ROM = new ROM(this)
   var keyboard: Keyboard = null //I'll see later how to implement this one
   var mmap: Mapper = null
-  var ppu: PPU = new PPU
+  var ppu: PPU = new PPU(this)
   var papu: PAPU = new PAPU
 
   // Init. all default emulator value
