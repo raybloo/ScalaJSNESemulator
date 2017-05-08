@@ -7,4 +7,7 @@ class PAPU {
   def reset: Unit = {
 
   }
+  def exWrite(address: Int, value: Byte): Unit = {
+
+  }
 }
