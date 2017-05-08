@@ -322,6 +322,13 @@ abstract class Mapper(nes: NES) {
           */
     } //I'll need more time to implement this, since I don't quite understand this
   }
+  
+  // TODO : added functions for PPU
+  def clockIrqCounter(): Unit = {
+  }
+  
+  def latchAccess(x : Int): Unit = {
+  }
 
   /** Load one program rom bank of 16KB */
   def loadRomBank(bank: Int, address: Int): Unit = {
