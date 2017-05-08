@@ -32,6 +32,14 @@ object Main extends JSApp {
       case Success(_) =>
         Dynamic.global.console.log(s"PrgRom Size is : ${rom.getPrgRomSize}")
         Dynamic.global.console.log(s"ChrRom Size is : ${rom.getChrRomSize}")
+        Dynamic.global.console.log(s"Mapper name is : ${rom.getMapperName}")
+      case Failure(e) => e.printStackTrace()
+    }
+    rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes").onComplete {
+      case Success(_) =>
+        Dynamic.global.console.log(s"PrgRom Size is : ${rom.getPrgRomSize}")
+        Dynamic.global.console.log(s"ChrRom Size is : ${rom.getChrRomSize}")
+        Dynamic.global.console.log(s"Mapper name is : ${rom.getMapperName}")
       case Failure(e) => e.printStackTrace()
     }
 

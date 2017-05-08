@@ -14,7 +14,7 @@ class NES() {
 
   // Init. accessible components
   var cpu: CPU = new CPU(this)
-  var rom: ROM = null
+  var rom: ROM = new ROM(this)
   var keyboard: Keyboard = null //I'll see later how to implement this one
   var mmap: Mapper = null
   var ppu: PPU = new PPU

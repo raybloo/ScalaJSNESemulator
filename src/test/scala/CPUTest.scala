@@ -1,17 +1,19 @@
 /**
-  * Rom test class
+  * Cpu test class
   */
 
-import Emulator.{NES, CPU}
+import Emulator.{CPU, NES}
 import utest._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 
 object CPUTest extends TestSuite {
   var nes: NES = new NES
-  var cpu = new CPU(nes)
+  var cpu = nes.cpu
+
   def tests = TestSuite {
     'LoadWriteTests {
       //I test only RAM address since above 0x2000 starts the mapped addresses and mapper is not yet fully implemented
@@ -43,23 +45,33 @@ object CPUTest extends TestSuite {
       assert(cpu.getProcessorFlags == 0x34) //0b00110100
     }
     'EmulateTest {
-      //ADC Absolute mode
-      cpu.reset
-      var addr = 0x0030
-      cpu.pc = 0x0001
-      cpu.write(cpu.pc+1,0x6D.toByte) //op
-      cpu.write(cpu.pc+2,addr.toByte) //addr
-      cpu.write(addr,2) //val
-      cpu.a = 2
-      //cpu.emulate
-      //assert(cpu.a == 4)
-      //BCC Relative Mode
-      cpu.reset
-      cpu.pc = 0x0001
-      cpu.write(cpu.pc+1,0x90.toByte) //op
-      cpu.write(cpu.pc+2,0x10.toByte) //val
-      //cpu.emulate
-      //assert(cpu.pc == 0x13)
+      val f: Future[Any] = nes.rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes")
+      val ret: Future[Any] = f.map {
+        case _ =>
+          //ADC Absolute mode
+          cpu.reset
+          var addr = 0x0030
+          cpu.pc = 20 //CMP, IMMEDIATE ADDRESSING MODE
+          cpu.write(cpu.pc + 1, 0x6D.toByte) //op
+          assert(cpu.load1Word(cpu.pc + 1) == 0x6D)
+          cpu.write(cpu.pc + 2, addr.toByte) //addr
+          cpu.write(cpu.pc + 3, 0x00) // cause mem is initialized to -1 for some reason
+          assert(cpu.load2Words(cpu.pc + 2) == addr)
+          cpu.write(addr, 2) //val
+          cpu.a = 2
+          cpu.emulate
+          //println(s"Next Instruction is: ${cpu.OpData.instructions(nes.mmap.load(cpu.pc+1))}")
+          assert(cpu.a == 4)
+
+          //BCC Relative Mode
+          cpu.reset
+          cpu.pc = 0x0001
+          cpu.write(cpu.pc + 1, 0x90.toByte) //op
+          cpu.write(cpu.pc + 2, 0x10) //addr
+          cpu.emulate
+          assert(cpu.pc == 0x13)
+      }
+      ret
     }
   }
 }

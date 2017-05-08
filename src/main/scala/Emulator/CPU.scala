@@ -5,7 +5,7 @@ import scala.scalajs.js.Dynamic
 
 /** The Cpu fetches, decodes and executes instructions
   * from de prgrom. It communicates to other parts of the
-  * nes like the ppu and the rom
+  * nes like the ppu and the rom mainly via the mapper
   */
 class CPU(nes: NES) {
 
@@ -115,7 +115,6 @@ class CPU(nes: NES) {
     irqRequested = false
     irqType = 3
 
-    var programRom = nes.rom.prgRom
   }
 
   /** Get all the flags into one single Byte */
@@ -224,7 +223,7 @@ class CPU(nes: NES) {
     }
 
     //Get next instruction of the program
-    val op: Int = nes.mmap.load(pc+1)
+    val op: Int = unsign(nes.mmap.load(pc+1))
 
     //Retrieve op infos from opdata object
     val opinf: Int = OpData.instructions(op)
