@@ -221,6 +221,7 @@ class ROM(nes: NES) {
           prgRom = getPrgRom
           chrRom = getChrRom
           vromTile = getVromTiles
+          nes.mmap = createMapper
 
         } else {
           Dynamic.global.console.log("File is not a valid ROM")

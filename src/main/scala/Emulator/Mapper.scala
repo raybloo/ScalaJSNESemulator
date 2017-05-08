@@ -81,22 +81,22 @@ abstract class Mapper(nes: NES) {
       //nes.ppu.updateControlReg2(value)
       case 0x2003 =>
       // Set Sprite RAM address:
-      //TODO: nes.ppu.writeSRAMAddress(value)
+      nes.ppu.writeSRAMAddress(value)
       case 0x2004 =>
       // Write to Sprite RAM:
-      //TODO: nes.ppu.sramWrite(value)
+      nes.ppu.sramWrite(value)
       case 0x2005 =>
       // Screen Scroll offsets:
-      //TODO: nes.ppu.scrollWrite(value)
+      nes.ppu.scrollWrite(value)
       case 0x2006 =>
       // Set VRAM address:
-      //TODO: nes.ppu.writeVRAMAddress(value)
+      nes.ppu.writeVRAMAddress(value)
       case 0x2007 =>
       // Write to VRAM:
-      //TODO: nes.ppu.vramWrite(value)
+      nes.ppu.vramWrite(value)
       case 0x4014 =>
       // Sprite Memory DMA Access
-      //TODO: nes.ppu.sramDMA(value)
+      nes.ppu.sramDMA(value)
       case 0x4015 =>
       // Sound Channel Switch, DMC Status
       //TODO: nes.papu.writeReg(address, value)
@@ -354,7 +354,7 @@ abstract class Mapper(nes: NES) {
   def loadVromBank(halfBank: Int, address: Int): Unit = {
     //default: 8KB banks
     if (nes.rom.getChrRomSize != 0) {
-      //TODO or not: nes.ppu.triggerRendering
+      nes.ppu.triggerRendering
       load4KVromBank((halfBank) % (nes.rom.getChrRomSize * 2), address) //the size of our tiles are 4K (0x1000)
       load4KVromBank((halfBank + 1) % (nes.rom.getChrRomSize * 2), address + 0x1000)
     }
@@ -363,11 +363,11 @@ abstract class Mapper(nes: NES) {
   /** Load 1/2 graphic rom bank of 4KB and set a new Tile for it */
   def load4KVromBank(halfBank: Int, address: Int): Unit = {
     if (nes.rom.getChrRomSize != 0) {
-      //TODO: nes.ppu.triggerRendering
+      nes.ppu.triggerRendering
       if (halfBank % 2 == 0) {
-        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).take(0x1000).copyToArray(nes.ppu.vramMem, address, 0x1000)
+        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).take(0x1000).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x1000)
       } else {
-        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).drop(0x1000).copyToArray(nes.ppu.vramMem, address, 0x1000)
+        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).drop(0x1000).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x1000)
       }
 
       val vromTile: Array[Tile] = nes.rom.vromTile(halfBank % (nes.rom.getChrRomSize * 2))
@@ -378,9 +378,9 @@ abstract class Mapper(nes: NES) {
   /** Load 1/4 graphic rom bank of 2KB and update corresponding tile */
   def load2kVromBank(quarterBank: Int, address: Int): Unit = {
     if (nes.rom.getChrRomSize != 0) {
-      //TODO: nes.ppu.triggerRendering
+      nes.ppu.triggerRendering
       val offset = 0x800 * (quarterBank % 4)
-      nes.rom.chrRom((quarterBank / 4) % nes.rom.getChrRomSize).slice(offset, offset + 0x800).copyToArray(nes.ppu.vramMem, address, 0x800)
+      nes.rom.chrRom((quarterBank / 4) % nes.rom.getChrRomSize).slice(offset, offset + 0x800).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x800)
       // Update tiles:
       val vromTile: Array[Tile] = nes.rom.vromTile((quarterBank / 2) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
       val baseIndex = address >> 4
@@ -395,7 +395,7 @@ abstract class Mapper(nes: NES) {
     if (nes.rom.getChrRomSize != 0) {
       //TODO: nes.ppu.triggerRendering
       val offset = 0x400 * (eighthBank % 8)
-      nes.rom.chrRom((eighthBank / 8) % nes.rom.getChrRomSize).slice(offset, offset + 0x400).copyToArray(nes.ppu.vramMem, address, 0x400)
+      nes.rom.chrRom((eighthBank / 8) % nes.rom.getChrRomSize).slice(offset, offset + 0x400).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x400)
       // Update tiles:
       val vromTile: Array[Tile] = nes.rom.vromTile((eighthBank / 4) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
       val baseIndex = address >> 4
