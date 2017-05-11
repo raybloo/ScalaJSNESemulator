@@ -70,7 +70,7 @@ class PPU(nes: NES) {
     * Each NES has only one color Palette.
     */
   class PaletteTable {
-    var curTable : Array[Int] = new Array(64)
+    var curTable : Array[Int] = new Array[Int](64)
     var emphTable : Array[Array[Int]] = Array.ofDim[Int](8, 64)
     var currentEmph : Int = -1
 	
@@ -115,9 +115,9 @@ class PPU(nes: NES) {
         // Calculate table
         for (i <- 1 to 64) {
           col = curTable(i)
-          r = scala.math.floor(getRed(col) * rFactor).asInstanceOf[Int]
-          g = scala.math.floor(getGreen(col) * gFactor).asInstanceOf[Int]
-          b = scala.math.floor(getBlue(col) * bFactor).asInstanceOf[Int]
+          r = (getRed(col) * rFactor).toInt
+          g = (getGreen(col) * gFactor).toInt
+          b = (getBlue(col) * bFactor).toInt
           emphTable(emph)(i) = getRgb(r,g,b)
         }
       }

@@ -1,7 +1,7 @@
 package Emulator
 
 import org.scalajs.dom
-import org.scalajs.dom.html
+import org.scalajs.dom.{MouseEvent, html}
 import org.scalajs.dom.html._
 import org.scalajs.dom.raw.{Event, ImageData}
 import org.scalajs.jquery.jQuery
@@ -19,6 +19,7 @@ class UI(nes: NES) {
   val screen: Canvas = dom.document.createElement("canvas").asInstanceOf[Canvas]
   val romSelect: Input = dom.document.createElement("input").asInstanceOf[Input]
   val status: Paragraph = dom.document.createElement("paragraph").asInstanceOf[Paragraph]
+  val startButton: Button = dom.document.createElement("button").asInstanceOf[Button]
   //TODO Buttons
 
   var zoomed: Boolean = false
@@ -30,6 +31,8 @@ class UI(nes: NES) {
   root.appendChild(status)
   root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
   root.appendChild(romSelect)
+  root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
+  root.appendChild(startButton)
   parent.appendChild(root)
 
   status.innerHTML = "No ROM loaded"
@@ -37,8 +40,25 @@ class UI(nes: NES) {
   screen.width = 256
   screen.height = 240
 
-  romSelect.innerHTML = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes"
+  romSelect.textContent = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes"
   romSelect.size = 300
+
+
+
+  val startCallBack: Function[MouseEvent,_] = {
+    e: MouseEvent =>
+      nes.start
+  }
+
+  val loadCallBack: Function[MouseEvent,_] = {
+    e: MouseEvent =>
+      loadROM
+      startButton.onclick = startCallBack
+      startButton.innerHTML = "Start!"
+  }
+
+  startButton.innerHTML = "Load ROM"
+  startButton.onclick = loadCallBack
 //  romSelect.onchange {
 //    case Event => nes.loadRom(romSelect.innerHTML)
 //    case _ =>
@@ -52,7 +72,7 @@ class UI(nes: NES) {
 
   /** Loads ROM */
   def loadROM: Unit = {
-    nes.loadRom(romSelect.innerHTML)
+    nes.loadRom(romSelect.textContent)
   }
 
   /** Set the screen back to black with no transparency */

@@ -143,6 +143,7 @@ class NES() {
     if (isRunning) {
       stop
     }
+    reset
     ui.updateStatus("Loading ROM...")
     // Load ROM file:
     rom = new ROM(this)
