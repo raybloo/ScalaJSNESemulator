@@ -2,10 +2,13 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>The Scala.js Tutorial</title>
+    <title>NESemul</title>
   </head>
   <body>
-	<button id="click-me-button" type="button">Load Castelvania III!</button>
+	<div class="nes"></div>
+	<p class="nes-status">Booting up...</p>
+	<input type="text" value="https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes" class="rom-select" size=100><br/>
+	<button id="click-me-button" type="button">Load!</button>
 	<!-- Include JavaScript dependencies -->
     <script type="text/javascript" src="./target/scala-2.11/nesemul-jsdeps.js"></script>
     <!-- Include Scala.js compiled code -->

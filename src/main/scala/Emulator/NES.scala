@@ -9,7 +9,7 @@ import scala.scalajs.js.timers.SetIntervalHandle
   */
 class NES() {
   // Init. all instances and state variables used for the emulator
-  val ui: UI = new UI
+  val ui: UI = new UI(this)
   var program: Program = null
 
   // Init. accessible components
