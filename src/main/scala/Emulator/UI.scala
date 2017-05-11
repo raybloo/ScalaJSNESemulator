@@ -19,12 +19,18 @@ class UI(nes: NES) {
   val screen: Canvas = dom.document.createElement("canvas").asInstanceOf[Canvas]
   val romSelect: Input = dom.document.createElement("input").asInstanceOf[Input]
   val status: Paragraph = dom.document.createElement("paragraph").asInstanceOf[Paragraph]
-  val lineBreak: BR = dom.document.createElement("BR").asInstanceOf[BR]
   //TODO Buttons
 
   var zoomed: Boolean = false
   val ctx: dom.CanvasRenderingContext2D = screen.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
   var canvasImageData: ImageData = ctx.getImageData(0,0,256,240)
+
+  root.appendChild(screen)
+  root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
+  root.appendChild(status)
+  root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
+  root.appendChild(romSelect)
+  parent.appendChild(root)
 
   status.innerHTML = "No ROM loaded"
 
@@ -38,17 +44,15 @@ class UI(nes: NES) {
 //    case _ =>
 //  }
 
-  root.appendChild(screen)
-  root.appendChild(lineBreak)
-  root.appendChild(status)
-  root.appendChild(lineBreak)
-  root.appendChild(romSelect)
-  parent.appendChild(root)
-
   resetCanvas
 
   def main: Unit = {
 
+  }
+
+  /** Loads ROM */
+  def loadROM: Unit = {
+    nes.loadRom(romSelect.innerHTML)
   }
 
   /** Set the screen back to black with no transparency */
@@ -73,11 +77,29 @@ class UI(nes: NES) {
     //TODO
   }
 
+  /** Change status message */
   def updateStatus(message: String): Unit = {
     status.innerHTML = message
   }
   
   def writeFrame(buffer: Array[Int], prevBuffer: Array[Int]): Unit = {
-
+    val imageData = canvasImageData.data
+    var pixel: Int = 0
+    for (i <- 0 to (256*240-1)) {
+      pixel = buffer(i)
+      if (pixel != prevBuffer(i)) {
+        var j = i*4
+        imageData(j) = pixel & 0xFF
+        imageData(j+1) = (pixel >> 8) & 0xFF
+        imageData(j+2) = (pixel >> 16) & 0xFF
+        prevBuffer(i) = pixel
+      }
+    }
+    ctx.putImageData(canvasImageData, 0, 0)
   }
+
+
+
+
+
 }

@@ -154,7 +154,7 @@ class NES() {
         false
       } else {
         mmap.loadROM
-        //ppu.setMirroring(rom.getMirroringType)
+        ppu.setMirroring(rom.getMirroringType)
         oldRomUrl = romUrl
         ui.updateStatus("Successfully loaded. Ready to be started.")
         true
