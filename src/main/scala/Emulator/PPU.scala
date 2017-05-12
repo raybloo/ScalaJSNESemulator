@@ -6,6 +6,7 @@ import scala.scalajs.js.Dynamic
   * Uses registers, a memory map, palettes, sprites and several tables.
   */
 class PPU(nes: NES) {
+  import PPU._
 
   /** The NameTable will contain two arrays:
     * - Tile:
@@ -1312,182 +1313,185 @@ class PPU(nes: NES) {
     }
     else if (address % 4 == 3) sprX(tIndex) = value // X coordinate
   }
-  
+
   /** Does a non-maskable interrupt. */
   def doNMI(): Unit = {
     // Set VBlank flag:
     setStatusFlag(StatusVBlank, true)
     nes.cpu.requestIrq(1)
   }
-  
-  // TODO if needed to and from JSON
 
+  // TODO if needed to and from JSON
 }
 
-/** The Tile contains:
-  * - pix and opaque:
-  *     Array containing all the tile data and array containing the boolean value if a Tile is opaque or not
-  *
-  * - fbIndex, tIndex and palIndex
-  *	    The frame buffer (Tile index in buffer), tile Index in pix and palette Index to be used on that Tile.
-  *
-  * - w and h
-  *      Width and height of a tile
-  *
-  * - initialized
-  *      Boolean true if scan line was set.
-  *
-  * - tpri
-  *      Unknown for now
-  *
-  * The Tile class will be used to render each tile in the buffer for the NES.
-  */
-class Tile {
-  // Tile data:
-  var pix: Array[Int] = new Array(64)
+object PPU {
 
-  // Frame buffer Index of a tile
-  var fbIndex : Int = _
-  // Tile Index in pix
-  var tIndex : Int = _
-  var w : Int = _
-  var h : Int = _
-  var palIndex : Int = _
-  var tpri : Int = _
-  var initialized : Boolean = false
-  var opaque : Array[Boolean] = new Array(8)
-
-  var srcx1 : Int = _
-  var srcx2 : Int = _
-  var srcy1 : Int = _
-  var srcy2 : Int = _
-
-  /** Will create the scanline */
-  def setBuffer(scanlineArray : Array[Int]): Unit = {
-    var y : Int = 0
-    for (y <- 1 to 8) setScanline(y, scanlineArray(y), scanlineArray(y+8))
-  }
-
-  /** Sets the scanline, by initializing the pix data */
-  def setScanline(sline: Int, b1: Int, b2: Int): Unit = {
-    var initialized : Boolean = true
-    var tIndex : Int = sline<<3
-    var x : Int = 0
-
-    for (x <- 1 to 8) {
-      pix(tIndex + x) = ((b1 >> (7 - x)) & 1) + (((b2 >> (7 - x)) & 1) << 1)
-      if (pix(tIndex + x) == 0) opaque(sline) = false
-    }
-  }
-
-  /** Looks if a tile is visible or not */
-  def isTransparent(x: Int, y: Int): Boolean = pix((y << 3) + x) == 0
-
-  /**
-    * Renders the tile inside the buffer using different values and conditions.
+  /** The Tile contains:
+    * - pix and opaque:
+    *     Array containing all the tile data and array containing the boolean value if a Tile is opaque or not
     *
-    * Variables are :
-    *   buffer : buffer.
-    *   srcx & srcy : size of the sprite, usually 8x8, so scr_1 = 0 and src_2 = 8
-    *   dx & dy : the first x and y coordinates of sprite data
-    *   palAdd : Upper two bits of color
-    *   palette :  shapes of tiles that make up backgrounds and sprites, palette data
-    *   flipHorizontal : Horizontal flip of a sprite
-    *   flipVertical : Vertical flip
-    *   pritable : Unknown
-    *   pri : Unknown
+    * - fbIndex, tIndex and palIndex
+    *	    The frame buffer (Tile index in buffer), tile Index in pix and palette Index to be used on that Tile.
+    *
+    * - w and h
+    *      Width and height of a tile
+    *
+    * - initialized
+    *      Boolean true if scan line was set.
+    *
+    * - tpri
+    *      Unknown for now
+    *
+    * The Tile class will be used to render each tile in the buffer for the NES.
     */
-  def render(buffer: Array[Int], srcx1v: Int, srcy1v: Int, srcx2v: Int, srcy2v: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
-    srcx1 = srcx1v
-    srcx2 = srcx2v
-    srcy1 = srcy1v
-    srcy2 = srcy2v
+  class Tile {
+    // Tile data:
+    var pix: Array[Int] = new Array(64)
 
-    if (dx < -7 || dx >= 256 || dy < -7 || dy >= 240) return
+    // Frame buffer Index of a tile
+    var fbIndex : Int = _
+    // Tile Index in pix
+    var tIndex : Int = _
+    var w : Int = _
+    var h : Int = _
+    var palIndex : Int = _
+    var tpri : Int = _
+    var initialized : Boolean = false
+    var opaque : Array[Boolean] = new Array(8)
 
-    w = srcx2 - srcx1
-    h = srcy2 - srcy1
+    var srcx1 : Int = _
+    var srcx2 : Int = _
+    var srcy1 : Int = _
+    var srcy2 : Int = _
 
-    if (dx < 0) srcx1 -= dx
-    if (dx + srcx2 >= 256) srcx2 = 256 - dx
-    if (dy < 0) srcy1 -= dy
-    if (dy + srcy2 >= 240) srcy2 = 240- dy
+    /** Will create the scanline */
+    def setBuffer(scanlineArray : Array[Int]): Unit = {
+      var y : Int = 0
+      for (y <- 1 to 8) setScanline(y, scanlineArray(y), scanlineArray(y+8))
+    }
 
-    fbIndex = (dy<<8) + dx
+    /** Sets the scanline, by initializing the pix data */
+    def setScanline(sline: Int, b1: Int, b2: Int): Unit = {
+      var initialized : Boolean = true
+      var tIndex : Int = sline<<3
+      var x : Int = 0
 
-    if (!flipHorizontal && !flipVertical) { // Upright tile
-      tIndex = 0
-      for (y <- 1 to 8) {
-        for (x <- 1 to 8) {
-          // Code in if is the same everywhere. So I put it in a function
-          renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
-          fbIndex += 1
-          tIndex += 1
-        }
-        fbIndex -= 8
-        fbIndex += 256
+      for (x <- 1 to 8) {
+        pix(tIndex + x) = ((b1 >> (7 - x)) & 1) + (((b2 >> (7 - x)) & 1) << 1)
+        if (pix(tIndex + x) == 0) opaque(sline) = false
       }
+    }
 
-    } else if (flipHorizontal && !flipVertical) { // Mirrored tile
-      tIndex = 7
-      for (y <- 1 to 8) {
-        for (x <- 1 to 8) {
-          // Code in if is the same everywhere. So I put it in a function
-          renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
-          fbIndex += 1
-          tIndex -= 1
+    /** Looks if a tile is visible or not */
+    def isTransparent(x: Int, y: Int): Boolean = pix((y << 3) + x) == 0
+
+    /**
+      * Renders the tile inside the buffer using different values and conditions.
+      *
+      * Variables are :
+      *   buffer : buffer.
+      *   srcx & srcy : size of the sprite, usually 8x8, so scr_1 = 0 and src_2 = 8
+      *   dx & dy : the first x and y coordinates of sprite data
+      *   palAdd : Upper two bits of color
+      *   palette :  shapes of tiles that make up backgrounds and sprites, palette data
+      *   flipHorizontal : Horizontal flip of a sprite
+      *   flipVertical : Vertical flip
+      *   pritable : Unknown
+      *   pri : Unknown
+      */
+    def render(buffer: Array[Int], srcx1v: Int, srcy1v: Int, srcx2v: Int, srcy2v: Int, dx: Int, dy: Int, palAdd: Int, palette: Array[Int], flipHorizontal: Boolean, flipVertical: Boolean, pri: Int, priTable: Array[Int]): Unit = {
+      srcx1 = srcx1v
+      srcx2 = srcx2v
+      srcy1 = srcy1v
+      srcy2 = srcy2v
+
+      if (dx < -7 || dx >= 256 || dy < -7 || dy >= 240) return
+
+      w = srcx2 - srcx1
+      h = srcy2 - srcy1
+
+      if (dx < 0) srcx1 -= dx
+      if (dx + srcx2 >= 256) srcx2 = 256 - dx
+      if (dy < 0) srcy1 -= dy
+      if (dy + srcy2 >= 240) srcy2 = 240- dy
+
+      fbIndex = (dy<<8) + dx
+
+      if (!flipHorizontal && !flipVertical) { // Upright tile
+        tIndex = 0
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
+            fbIndex += 1
+            tIndex += 1
+          }
+          fbIndex -= 8
+          fbIndex += 256
         }
-        fbIndex -= 8
-        fbIndex += 256
-        tIndex += 16
-      }
 
-    } else if(flipVertical && !flipHorizontal) {  // Reflected tile
-      tIndex = 56
-
-      for (y <- 1 to 8) {
-        for (x <- 1 to 8) {
-          // Code in if is the same everywhere. So I put it in a function
-          renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
-          fbIndex += 1
-          tIndex += 1
+      } else if (flipHorizontal && !flipVertical) { // Mirrored tile
+        tIndex = 7
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
+            fbIndex += 1
+            tIndex -= 1
+          }
+          fbIndex -= 8
+          fbIndex += 256
+          tIndex += 16
         }
-        fbIndex -= 8
-        fbIndex += 256
-        tIndex -= 16
-      }
 
-    } else { // flipVertical && flipHorizontal. Inverted tile
-      tIndex = 63
+      } else if(flipVertical && !flipHorizontal) {  // Reflected tile
+        tIndex = 56
 
-      for (y <- 1 to 8) {
-        for (x <- 1 to 8) {
-          // Code in if is the same everywhere. So I put it in a function
-          renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
-          fbIndex += 1
-          tIndex -= 1
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
+            fbIndex += 1
+            tIndex += 1
+          }
+          fbIndex -= 8
+          fbIndex += 256
+          tIndex -= 16
         }
-        fbIndex -= 8
-        fbIndex += 256
+
+      } else { // flipVertical && flipHorizontal. Inverted tile
+        tIndex = 63
+
+        for (y <- 1 to 8) {
+          for (x <- 1 to 8) {
+            // Code in if is the same everywhere. So I put it in a function
+            renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
+            fbIndex += 1
+            tIndex -= 1
+          }
+          fbIndex -= 8
+          fbIndex += 256
+        }
+
       }
 
     }
 
-  }
-
-  /** Helper function that actively renders tile to buffer. Used to not have duplicate code. */
-  def renderFunction(buffer: Array[Int], palette: Array[Int], palAdd: Int, x: Int, y: Int, pri: Int, priTable: Array[Int]): Unit = {
-    if (x >= srcx1 && x < srcx2 && y >= srcy1 && y < srcy2) {
-      palIndex = pix(tIndex)
-      tpri = priTable(fbIndex)
-      if (palIndex != 0 && pri <= (tpri&0xFF)) {
-        // Rendering tile to buffer
-        buffer(fbIndex) = palette(palIndex+palAdd)
-        tpri = (tpri&0xF00)|pri
-        priTable(fbIndex) = tpri
+    /** Helper function that actively renders tile to buffer. Used to not have duplicate code. */
+    def renderFunction(buffer: Array[Int], palette: Array[Int], palAdd: Int, x: Int, y: Int, pri: Int, priTable: Array[Int]): Unit = {
+      if (x >= srcx1 && x < srcx2 && y >= srcy1 && y < srcy2) {
+        palIndex = pix(tIndex)
+        tpri = priTable(fbIndex)
+        if (palIndex != 0 && pri <= (tpri&0xFF)) {
+          // Rendering tile to buffer
+          buffer(fbIndex) = palette(palIndex+palAdd)
+          tpri = (tpri&0xF00)|pri
+          priTable(fbIndex) = tpri
+        }
       }
     }
+
+    // TODO if necessary : To and from JSON
   }
 
-  // TODO if necessary : To and from JSON
 }

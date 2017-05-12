@@ -35,7 +35,7 @@ class ROM(nes: NES) {
   var trainer: Array[Byte] = _
   var prgRom: Array[Array[Byte]] = _
   var chrRom: Array[Array[Byte]] = _
-  var vromTile: Array[Array[Tile]] = _
+  var vromTile: Array[Array[PPU.Tile]] = _
   var PCPRom: Array[Byte] = _ //unimplemented yet
   var PCINSTRom: Array[Byte] = _ //unimplemented yet
 
@@ -126,12 +126,12 @@ class ROM(nes: NES) {
   }
 
   /** Return and initialize vromtiles */
-  def getVromTiles: Array[Array[Tile]] = {
+  def getVromTiles: Array[Array[PPU.Tile]] = {
     vromTile = new Array(getChrRomSize*2) // 2 tiles per 8k rom bank (1 per 4k bank)
     for (i <- 0 to (getChrRomSize*2)) {
       vromTile(i) = new Array(0x100)
       for (j <- 0 to 100) {
-        vromTile(i)(j) = new Tile
+        vromTile(i)(j) = new PPU.Tile
       }
     }
     vromTile

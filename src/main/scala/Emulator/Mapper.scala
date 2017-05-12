@@ -370,7 +370,7 @@ abstract class Mapper(nes: NES) {
         nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).drop(0x1000).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x1000)
       }
 
-      val vromTile: Array[Tile] = nes.rom.vromTile(halfBank % (nes.rom.getChrRomSize * 2))
+      val vromTile: Array[PPU.Tile] = nes.rom.vromTile(halfBank % (nes.rom.getChrRomSize * 2))
       vromTile.copyToArray(nes.ppu.ptTile, address >> 4, 0x100)
     }
   }
@@ -382,7 +382,7 @@ abstract class Mapper(nes: NES) {
       val offset = 0x800 * (quarterBank % 4)
       nes.rom.chrRom((quarterBank / 4) % nes.rom.getChrRomSize).slice(offset, offset + 0x800).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x800)
       // Update tiles:
-      val vromTile: Array[Tile] = nes.rom.vromTile((quarterBank / 2) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
+      val vromTile: Array[PPU.Tile] = nes.rom.vromTile((quarterBank / 2) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
       val baseIndex = address >> 4
       for (i <- 0 to 0x80) {
         nes.ppu.ptTile(baseIndex + i) = vromTile(((quarterBank % 2) << 7) + i)
@@ -397,7 +397,7 @@ abstract class Mapper(nes: NES) {
       val offset = 0x400 * (eighthBank % 8)
       nes.rom.chrRom((eighthBank / 8) % nes.rom.getChrRomSize).slice(offset, offset + 0x400).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x400)
       // Update tiles:
-      val vromTile: Array[Tile] = nes.rom.vromTile((eighthBank / 4) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
+      val vromTile: Array[PPU.Tile] = nes.rom.vromTile((eighthBank / 4) % nes.rom.getChrRomSize) // Tiles are only half the size of a full graphic rom bank
       val baseIndex = address >> 4
       for (i <- 0 to 0x40) {
         nes.ppu.ptTile(baseIndex + i) = vromTile(((eighthBank % 4) << 6) + i)
