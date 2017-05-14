@@ -39,6 +39,10 @@ class ROM(nes: NES) {
   var PCPRom: Array[Byte] = _ //unimplemented yet
   var PCINSTRom: Array[Byte] = _ //unimplemented yet
 
+  //ROM sizes
+  var prgRomSize: Int = 0
+  var chrRomSize: Int = 0
+
   //mappers name
   val mapperName: Array[String] = Array.fill(92)("Unknown Mapper")
 
@@ -103,7 +107,7 @@ class ROM(nes: NES) {
     for (i <- 0 until getPrgRomSize) {
       prgRom(i) = new Array(0x4000)
       if(offset + 0x4000 <= fullRom.length) {
-        fullRom.slice(offset, offset + 0x4000)
+        prgRom(i) = fullRom.slice(offset, offset + 0x4000)
       }
       offset += 0x4000
     }
@@ -118,7 +122,7 @@ class ROM(nes: NES) {
     for (i <- 0 until getChrRomSize) {
       chrRom(i) = new Array(0x2000)
       if(offset + 0x2000 <= fullRom.length) {
-        fullRom.slice(offset, offset + 0x2000)
+        chrRom(i) = fullRom.slice(offset, offset + 0x2000)
       }
       offset += 0x2000
     }
@@ -149,13 +153,19 @@ class ROM(nes: NES) {
 
   /** Returns the size in 16KB of the prgrom */
   def getPrgRomSize: Int = {
-    // Scala Bytes are signed, but we want it unsigned, so we ll be using the modulo operator
-    (getHeader(4).toInt + 0x100) % 0x100 // conversion from signed to unsigned
+    prgRomSize
   }
 
   /** Returns the size in 8KB of the chrrom */
   def getChrRomSize: Int = {
-    (getHeader(5).toInt + 0x100) % 0x100 // conversion from signed to unsigned
+    chrRomSize
+  }
+
+  /** Store size of both chr and prg rom into vriables */
+  def setSizes: Unit = {
+    // Scala Bytes are signed, but we want it unsigned, so we ll be using the modulo operator
+    prgRomSize = (getHeader(4).toInt + 0x100) % 0x100 // conversion from signed to unsigned
+    chrRomSize = (getHeader(5).toInt + 0x100) % 0x100 // conversion from signed to unsigned
   }
 
   /** Returns the mirroring type as an `Int`.
@@ -217,6 +227,7 @@ class ROM(nes: NES) {
         byteBuffer.get(fullRom)
         if(checkRom) {//performs a check before validating
           Dynamic.global.console.log(s"Successfully loaded $url")
+          setSizes
           trainer = getTrainer
           prgRom = getPrgRom
           chrRom = getChrRom

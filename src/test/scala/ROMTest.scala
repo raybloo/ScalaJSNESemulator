@@ -2,14 +2,13 @@
   * Rom test class
   */
 
-import Emulator.ROM
-import Emulator.NES
-import utest._
+import Emulator.{NES, NoMapper, ROM}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import utest._
 
 
 object ROMTest extends TestSuite {
@@ -35,6 +34,27 @@ object ROMTest extends TestSuite {
           assert(!rom.hasBatteryRam)
           assert(rom.getChrRomSize == 16) //128k
           assert(rom.getPrgRomSize == 16) //256k
+      }
+      ret
+    }
+    'GetRomTests {
+      val f: Future[Any] = rom.openRom("https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes")
+      val ret: Future[Any] = f.map {
+        case _ =>
+          assert(rom.checkRom)
+          assert(rom.getPrgRomSize == 2) //32k
+          val prgROM: Array[Array[Byte]] = rom.getPrgRom
+          assert(prgROM(0)(0x3fff) == rom.prgRom(0)(0x3fff))
+          assert(prgROM(1)(0x3fff) == rom.prgRom(1)(0x3fff))
+          assert(prgROM(1)(2) != 0)
+          assert(prgROM.length == 2)
+          assert(prgROM(0).length == 0x4000)
+          val chrROM: Array[Array[Byte]] = rom.getChrRom
+          assert(chrROM(0)(0x1fff) == rom.chrRom(0)(0x1fff))
+          assert(chrROM(1)(0x1fff) == rom.chrRom(1)(0x1fff))
+          assert(chrROM.length == 2)
+          assert(chrROM(0).length == 0x2000)
+
       }
       ret
     }

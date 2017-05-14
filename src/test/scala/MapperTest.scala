@@ -6,6 +6,7 @@ import Emulator.{Mapper, NES, NoMapper, ROM}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import utest._
 
 object MapperTest extends TestSuite {
   var nes: NES = new NES
@@ -15,9 +16,13 @@ object MapperTest extends TestSuite {
     'LoadPrgRomTest {
       nes.rom.prgRom = Array.fill[Byte](3,0x4000)(42)
       nes.rom.prgRom(1) = Array.fill[Byte](0x4000)(52)
-      nes.rom.prgRom(2) = Array.fill[Byte](0x4000)(113)
+      nes.rom.prgRom(2) = Array.fill[Byte](0x4000)(128.toByte)
+      nes.rom.chrRomSize = 0
+      nes.rom.prgRomSize = 3
       nes.mmap.loadRomBank(2,0x8000)
-      assert(nes.mmap.load(0xBFFF) == 113)
+      nes.mmap.loadRomBank(0,0xC000)
+      assert(nes.mmap.load(0xBFFF) == 128)
+      assert(nes.cpu.load2Words(0xFFFC) == 42 + (42 << 8))
     }
   }
 
