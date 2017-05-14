@@ -27,7 +27,7 @@ class CPU(nes: NES) {
   var interruptDisable: Boolean = true //2nd bit
   var decimalModeFlag: Boolean = false //3rd bit
   var breakCommand: Boolean = true //4th bit
-  var unused: Boolean= true //5th bit
+  var unused: Boolean = true //5th bit
   var overflowFlag: Boolean = false //6th bit
   var negativeFlag: Boolean = false //7th bit
 
@@ -64,7 +64,7 @@ class CPU(nes: NES) {
     }
 
     //Special Addresses
-    for (p <- 0 to 3) {
+    for (p <- 0 until 4) {
       val i = p*0x800
       memory(i+0x008) = -9//0xF7
       memory(i+0x009) = -17//0xEF
@@ -115,6 +115,7 @@ class CPU(nes: NES) {
     irqRequested = false
     irqType = 3
 
+    Dynamic.global.console.log(s"PROCESSOR COUNTER IS $pc")
   }
 
   /** Get all the flags into one single Byte */
@@ -161,7 +162,7 @@ class CPU(nes: NES) {
 
   /** Return the unsigned value of a Byte in the form of an Int */
   def unsign(byte: Int): Int = {
-    byte & 0xff
+    (byte & 0xff)
   }
 
   /**Load 1 byte from memory */
@@ -214,7 +215,7 @@ class CPU(nes: NES) {
         case 2 => //reset
           doResetIrq
         case _ =>
-          Dynamic.global.console("Unspecified interrupt request type")
+          Dynamic.global.console.log("Unspecified interrupt request type")
       }
       pc = pc_new
       interruptDisable = interruptDisable_new
@@ -238,6 +239,7 @@ class CPU(nes: NES) {
     //Increment PC by number of op bytes
     var opaddr = pc
     pc += (OpData.opSize(op) & 0xff)
+
 
     //Find the effective address
     var addr = 0
@@ -303,8 +305,10 @@ class CPU(nes: NES) {
           addr = unsign(nes.mmap.load(addr)) + (nes.mmap.load((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
         }
       case _ =>
-        //nes.stop
+        nes.stop
         Dynamic.global.console.log(s"Invalid Address Mode $addrMode")
+        Dynamic.global.console.log(s"Code Line $op")
+        Dynamic.global.console.log(s"Op address $opaddr")
     }
     addr&=0xffff //Address mustn't exceed 16 bits
 
@@ -616,7 +620,7 @@ class CPU(nes: NES) {
     breakCommand_new = false
     pc_new = nes.mmap.load(0xfffe) | (nes.mmap.load(0xffff) << 8)
     pc_new -= 1
-
+    //Dynamic.global.console.log("NORMAL IRQ")
   }
 
   /** Execute unmaksable interrupt code */
@@ -628,13 +632,17 @@ class CPU(nes: NES) {
       push(status)
       pc_new = nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8)
       pc_new -= 1
+      //Dynamic.global.console.log("NM IRQ")
     }
   }
 
   /** Execute reset interrupt code */
   def doResetIrq: Unit = {
     pc_new = nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8)
+    Dynamic.global.console.log(s"RESET VECTOR 1: ${nes.mmap.load(0xfffc)}")
+    Dynamic.global.console.log(s"RESET VECTOR 2: ${nes.mmap.load(0xfffd)}")
     pc_new -= 1
+    //Dynamic.global.console.log("RESET IRQ")
   }
 
   /** Push a value on the stack */

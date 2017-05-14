@@ -30,7 +30,7 @@ class UI(nes: NES) {
   var stopCallBack: Function[MouseEvent,_] = _
   var loadCallBack: Function[MouseEvent,_] = _
 
-  init //Comment this if you want to test the code
+  //init //Comment this if you want to test the code
 
   def init: Unit = {
 
