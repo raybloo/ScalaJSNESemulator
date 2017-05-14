@@ -15,56 +15,82 @@ import scala.scalajs.js.JSApp
 class UI(nes: NES) {
   val parent = dom.document.body
 
-  val root: Div = dom.document.createElement("div").asInstanceOf[Div]
-  val screen: Canvas = dom.document.createElement("canvas").asInstanceOf[Canvas]
-  val romSelect: Input = dom.document.createElement("input").asInstanceOf[Input]
-  val status: Paragraph = dom.document.createElement("paragraph").asInstanceOf[Paragraph]
-  val startButton: Button = dom.document.createElement("button").asInstanceOf[Button]
+  var root: Div = null
+  var screen: Canvas = null
+  var romSelect: Input = null
+  var status: Paragraph = null
+  var startButton: Button = null
   //TODO Buttons
 
   var zoomed: Boolean = false
-  val ctx: dom.CanvasRenderingContext2D = screen.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
-  var canvasImageData: ImageData = ctx.getImageData(0,0,256,240)
+  var ctx: dom.CanvasRenderingContext2D = null
+  var canvasImageData: ImageData = null
 
-  root.appendChild(screen)
-  root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
-  root.appendChild(status)
-  root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
-  root.appendChild(romSelect)
-  root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
-  root.appendChild(startButton)
-  parent.appendChild(root)
+  var startCallBack: Function[MouseEvent,_] = _
+  var stopCallBack: Function[MouseEvent,_] = _
+  var loadCallBack: Function[MouseEvent,_] = _
 
-  status.innerHTML = "No ROM loaded"
+  init //Comment this if you want to test the code
 
-  screen.width = 256
-  screen.height = 240
+  def init: Unit = {
 
-  romSelect.textContent = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes"
-  romSelect.size = 300
+    root = dom.document.createElement("div").asInstanceOf[Div]
+    screen = dom.document.createElement("canvas").asInstanceOf[Canvas]
+    romSelect = dom.document.createElement("input").asInstanceOf[Input]
+    status = dom.document.createElement("paragraph").asInstanceOf[Paragraph]
+    startButton = dom.document.createElement("button").asInstanceOf[Button]
 
+    zoomed = false
+    ctx = screen.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
+    canvasImageData = ctx.getImageData(0,0,256,240)
 
+    status.innerHTML = "No ROM loaded"
 
-  val startCallBack: Function[MouseEvent,_] = {
-    e: MouseEvent =>
-      nes.start
+    screen.width = 256
+    screen.height = 240
+
+    romSelect.textContent = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes"
+    romSelect.size = 300
+
+    startCallBack = {
+      e: MouseEvent =>
+        nes.start
+    }
+
+    loadCallBack = {
+      e: MouseEvent =>
+        loadROM
+        startButton.onclick = startCallBack
+        startButton.innerHTML = "Start!"
+    }
+
+    startButton.innerHTML = "Load ROM"
+    startButton.onclick = loadCallBack
+
+    root.appendChild(screen)
+    root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
+    root.appendChild(status)
+    root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
+    root.appendChild(romSelect)
+    root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
+    root.appendChild(startButton)
+    parent.appendChild(root)
+
+    resetCanvas
   }
 
-  val loadCallBack: Function[MouseEvent,_] = {
-    e: MouseEvent =>
-      loadROM
-      startButton.onclick = startCallBack
-      startButton.innerHTML = "Start!"
-  }
 
-  startButton.innerHTML = "Load ROM"
-  startButton.onclick = loadCallBack
+
+
+
+
+
 //  romSelect.onchange {
 //    case Event => nes.loadRom(romSelect.innerHTML)
 //    case _ =>
 //  }
 
-  resetCanvas
+
 
   def main: Unit = {
 
@@ -99,7 +125,7 @@ class UI(nes: NES) {
 
   /** Change status message */
   def updateStatus(message: String): Unit = {
-    status.innerHTML = message
+    if(status != null) status.innerHTML = message
   }
   
   def writeFrame(buffer: Array[Int], prevBuffer: Array[Int]): Unit = {

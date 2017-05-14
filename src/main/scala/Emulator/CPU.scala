@@ -303,7 +303,8 @@ class CPU(nes: NES) {
           addr = unsign(nes.mmap.load(addr)) + (nes.mmap.load((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
         }
       case _ =>
-        Dynamic.global.console("Invalid Address Mode used")
+        //nes.stop
+        Dynamic.global.console.log(s"Invalid Address Mode $addrMode")
     }
     addr&=0xffff //Address mustn't exceed 16 bits
 
@@ -587,8 +588,7 @@ class CPU(nes: NES) {
         zeroFlag = y == 0
       case _ =>
         nes.stop
-        Dynamic.global.console("Invalid op")
-
+        Dynamic.global.console.log(s"Invalid Operation $op")
     }
     cycleCount
   }

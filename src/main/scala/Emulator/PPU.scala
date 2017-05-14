@@ -44,9 +44,9 @@ class PPU(nes: NES) {
       var attindex : Int = 0
 		
       var sqy, sqx : Int = 0
-      for (sqy <- 1 to 2; sqx <- 1 to 2) {
+      for (sqy <- 0 until 2; sqx <- 0 until 2) {
         add = (value>>(2*(sqy*2+sqx)))&3 // Bit operators
-        for (y <- 1 to 2; x <- 1 to 2) {
+        for (y <- 0 until 2; x <- 0 until 2) {
           tx = basex+sqx*2+x
           ty = basey+sqy*2+y
           attindex = ty*width+tx
@@ -98,7 +98,7 @@ class PPU(nes: NES) {
       var rFactor, gFactor, bFactor : Double = 1.0
       
       // Calculate a table for each possible emphasis
-      for (emph <- 1 to 8) {
+      for (emph <- 0 until 8) {
         // Determine color componenet factors
         if ((emph & 1) != 0) {
           rFactor = 0.75
@@ -114,7 +114,7 @@ class PPU(nes: NES) {
         }
         
         // Calculate table
-        for (i <- 1 to 64) {
+        for (i <- 0 until 64) {
           col = curTable(i)
           r = (getRed(col) * rFactor).toInt
           g = (getGreen(col) * gFactor).toInt
@@ -129,7 +129,7 @@ class PPU(nes: NES) {
       if (emph != currentEmph) {
         currentEmph = emph
         var i : Int = 0
-        for (i <- 1 to 64) curTable(i) = emphTable(emph)(i)
+        for (i <- 0 until 64) curTable(i) = emphTable(emph)(i)
       }
     }
 	
@@ -301,8 +301,8 @@ class PPU(nes: NES) {
   /** Initializing/reseting all variables at reset. */
   def reset(): Unit = {
     // Memory
-    vramMem = new Array(0x8000)(0)
-    spriteMem = new Array(0x100)(0)
+    vramMem = Array.fill[Int](0x8000)(0)
+    spriteMem = Array.fill[Int](0x100)(0)
 
     // VRAM I/O:
     vramAddress = -1
@@ -391,14 +391,14 @@ class PPU(nes: NES) {
         
     // Create pattern table tile buffers:
     ptTile = new Array(512)
-    for (i <- 1 to 512) ptTile(i) = new Tile()
+    for (i <- 0 until 512) ptTile(i) = new Tile()
         
     // Create nametable buffers:
     // Name table data:
     ntable1 = new Array(4)
     nameTable = new Array(4)
     
-    for (i <- 1 to 4) nameTable(i) = new NameTable(32, 32, "Nt"+i)
+    for (i <- 0 until 4) nameTable(i) = new NameTable(32, 32, "Nt"+i)
         
     // Initialize mirroring lookup table:
     vramMirrorTable = new Array(0x8000)
@@ -420,7 +420,7 @@ class PPU(nes: NES) {
     
     // Remove mirroring:
     if (vramMirrorTable == null) vramMirrorTable = new Array(0x8000)
-    for (i <- 1 to 0x8000) vramMirrorTable(i) = i
+    for (i <- 0 until 0x8000) vramMirrorTable(i) = i
     
     // Palette mirroring:
     defineMirrorRegion(0x3f20,0x3f00,0x20)
@@ -488,7 +488,7 @@ class PPU(nes: NES) {
     * size :
     *      size of change
     */
-  def defineMirrorRegion(fromStart: Int, toStart: Int, size: Int): Unit = for (i <- 1 to size) vramMirrorTable(fromStart+i) = toStart+i
+  def defineMirrorRegion(fromStart: Int, toStart: Int, size: Int): Unit = for (i <- 0 until size) vramMirrorTable(fromStart+i) = toStart+i
 
   /** Interrupt the CPU and render everything. */
   def startVBlank(): Unit = {
@@ -618,8 +618,8 @@ class PPU(nes: NES) {
             bgColor = 0x00000
       }
     }
-    for (i <- 1 to 256*240) buffer(i) = bgColor
-    for (i <- 1 to pixrendered.length) pixrendered(i) = 65
+    for (i <- 0 until 256*240) buffer(i) = bgColor
+    for (i <- 0 until pixrendered.length) pixrendered(i) = 65
   }
   
   /** Finalize the frame by putting sprites, than show it on UI. */
@@ -628,30 +628,30 @@ class PPU(nes: NES) {
     if (showSpr0Hit) {
       // Spr 0 position:
       if (sprX(0) >= 0 && sprX(0) < 256 && sprY(0) >= 0 && sprY(0) < 240) {
-        for (i <- 1 to 256) buffer((sprY(0)<<8)+i) = 0xFF5555
-        for (i <- 1 to 240) buffer((i<<8)+sprX(0)) = 0xFF5555
+        for (i <- 0 until 256) buffer((sprY(0)<<8)+i) = 0xFF5555
+        for (i <- 0 until 240) buffer((i<<8)+sprX(0)) = 0xFF5555
       }
 
       // Hit position:
       if (spr0HitX >= 0 && spr0HitX < 256 && spr0HitY >= 0 && spr0HitY < 240) {
-        for (i <- 1 to 256) buffer((spr0HitY<<8)+i) = 0x55FF55
+        for (i <- 0 until 256) buffer((spr0HitY<<8)+i) = 0x55FF55
 
-        for (i <- 1 to 240) buffer((i<<8)+spr0HitX) = 0x55FF55
+        for (i <- 0 until 240) buffer((i<<8)+spr0HitX) = 0x55FF55
       }
     }
     
     // if either the sprites or the background should be clipped, both are clipped after rendering is finished.
     if (clipToTvSize || f_bgClipping == 0 || f_spClipping == 0) {
       // Clip left 8-pixels column:
-      for (y <- 1 to 240; x <- 1 to 8) buffer((y<<8)+x) = 0
+      for (y <- 0 until 240; x <- 0 until 8) buffer((y<<8)+x) = 0
     }
     
     // Clip right 8-pixels column too:
-    if (clipToTvSize) for (y <- 1 to 240; x <- 1 to 8) buffer((y<<8)+255-x) = 0
+    if (clipToTvSize) for (y <- 0 until 240; x <- 0 until 8) buffer((y<<8)+255-x) = 0
         
     // Clip top and bottom 8 pixels:
     if (clipToTvSize) {
-      for (y <- 1 to 8; x <- 1 to 256) {
+      for (y <- 0 until 8; x <- 0 until 256) {
         buffer((y<<8)+x) = 0
         buffer(((239-y)<<8)+x) = 0
       }
@@ -1084,7 +1084,7 @@ class PPU(nes: NES) {
   /** Renders the sprite data for a given scanline */
   def renderSpritesPartially(startScan: Int, scanCount: Int, bgPri: Boolean): Unit = {
     if (f_spVisibility == 1) {
-      for (i <- 1 to 64) {
+      for (i <- 0 until 64) {
         if (bgPriority(i) == bgPri && sprX(i) >= 0 && sprX(i) < 256 && sprY(i)+8 >= startScan &&  sprY(i) < startScan + scanCount) {
           // Show sprite.
           if (f_spriteSize == 0) {
@@ -1166,7 +1166,7 @@ class PPU(nes: NES) {
             bufferIndex += 1
           }
         } else {
-          for (i <- 1 to 8) {
+          for (i <- 0 until 8) {
             if (x >= 0 && x < 256) {
               if (bufferIndex >= 0 && bufferIndex < 61440 && pixrendered(bufferIndex) != 0) {
                 if (t.pix(toffset + i) != 0) {
@@ -1215,7 +1215,7 @@ class PPU(nes: NES) {
             bufferIndex += 1
           }
         } else {
-          for (i <- 1 to 8) {
+          for (i <- 0 until 8) {
             if (x >= 0 && x < 256) {
               if (bufferIndex >= 0 && bufferIndex < 61440 && pixrendered(bufferIndex) != 0) {
                 if (t.pix(toffset + i) != 0) {
@@ -1265,12 +1265,12 @@ class PPU(nes: NES) {
   
   /** Reads data from $3f00 to $f20 into the two buffered palettes. */
   def updatePalettes(): Unit = {
-    for (i <- 1 to 16) {
+    for (i <- 0 until 16) {
       if (f_dispType == 0) imgPalette(i) = palTable.getEntry(vramMem(0x3f00 + i) & 63)
       else imgPalette(i) = palTable.getEntry(vramMem(0x3f00 + i) & 32)
     }
 
-    for (i <- 1 to 16) {
+    for (i <- 0 until 16) {
       if (f_dispType == 0) sprPalette(i) = palTable.getEntry(vramMem(0x3f10 + i) & 63)
       else sprPalette(i) = palTable.getEntry(vramMem(0x3f10 + i) & 32)
     }
@@ -1367,7 +1367,7 @@ object PPU {
     /** Will create the scanline */
     def setBuffer(scanlineArray : Array[Int]): Unit = {
       var y : Int = 0
-      for (y <- 1 to 8) setScanline(y, scanlineArray(y), scanlineArray(y+8))
+      for (y <- 0 until 8) setScanline(y, scanlineArray(y), scanlineArray(y+8))
     }
 
     /** Sets the scanline, by initializing the pix data */
@@ -1376,7 +1376,7 @@ object PPU {
       var tIndex : Int = sline<<3
       var x : Int = 0
 
-      for (x <- 1 to 8) {
+      for (x <- 0 until 8) {
         pix(tIndex + x) = ((b1 >> (7 - x)) & 1) + (((b2 >> (7 - x)) & 1) << 1)
         if (pix(tIndex + x) == 0) opaque(sline) = false
       }
@@ -1419,8 +1419,8 @@ object PPU {
 
       if (!flipHorizontal && !flipVertical) { // Upright tile
         tIndex = 0
-        for (y <- 1 to 8) {
-          for (x <- 1 to 8) {
+        for (y <- 0 until 8) {
+          for (x <- 0 until 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
@@ -1432,8 +1432,8 @@ object PPU {
 
       } else if (flipHorizontal && !flipVertical) { // Mirrored tile
         tIndex = 7
-        for (y <- 1 to 8) {
-          for (x <- 1 to 8) {
+        for (y <- 0 until 8) {
+          for (x <- 0 until 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
@@ -1447,8 +1447,8 @@ object PPU {
       } else if(flipVertical && !flipHorizontal) {  // Reflected tile
         tIndex = 56
 
-        for (y <- 1 to 8) {
-          for (x <- 1 to 8) {
+        for (y <- 0 until 8) {
+          for (x <- 0 until 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
@@ -1462,8 +1462,8 @@ object PPU {
       } else { // flipVertical && flipHorizontal. Inverted tile
         tIndex = 63
 
-        for (y <- 1 to 8) {
-          for (x <- 1 to 8) {
+        for (y <- 0 until 8) {
+          for (x <- 0 until 8) {
             // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1

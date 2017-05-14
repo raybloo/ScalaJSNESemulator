@@ -100,7 +100,7 @@ class ROM(nes: NES) {
   def getPrgRom: Array[Array[Byte]] = {
     prgRom = new Array(getPrgRomSize)
     var offset = 16 + (if(hasTrainer) 512 else 0)
-    for (i <- 0 to getPrgRomSize) {
+    for (i <- 0 until getPrgRomSize) {
       prgRom(i) = new Array(0x4000)
       if(offset + 0x4000 <= fullRom.length) {
         fullRom.slice(offset, offset + 0x4000)
@@ -115,7 +115,7 @@ class ROM(nes: NES) {
     chrRom = new Array(getChrRomSize)
     var offset = 16 + (if(hasTrainer) 512 else 0)
     offset += 0x4000*((getHeader(4).toInt + 0x100) % 0x100)
-    for (i <- 0 to getChrRomSize) {
+    for (i <- 0 until getChrRomSize) {
       chrRom(i) = new Array(0x2000)
       if(offset + 0x2000 <= fullRom.length) {
         fullRom.slice(offset, offset + 0x2000)
@@ -128,7 +128,7 @@ class ROM(nes: NES) {
   /** Return and initialize vromtiles */
   def getVromTiles: Array[Array[PPU.Tile]] = {
     vromTile = new Array(getChrRomSize*2) // 2 tiles per 8k rom bank (1 per 4k bank)
-    for (i <- 0 to (getChrRomSize*2)) {
+    for (i <- 0 until (getChrRomSize*2)) {
       vromTile(i) = new Array(0x100)
       for (j <- 0 to 100) {
         vromTile(i)(j) = new PPU.Tile

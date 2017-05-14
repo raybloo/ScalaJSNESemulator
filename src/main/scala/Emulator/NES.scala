@@ -124,7 +124,7 @@ class NES() {
   /** Stop the emulator */
   def stop: Unit = {
     timers.clearInterval(intervalFrame)
-    timers.clearInterval(intervalFrame)
+    timers.clearInterval(intervalFpsDisplay)
     isRunning = false
   }
 
