@@ -1,15 +1,18 @@
 package Emulator
 
 import scala.scalajs.js
-import js.timers
+import js.{Dynamic, timers}
+import scala.concurrent.Future
 import scala.scalajs.js.timers.SetIntervalHandle
+import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /** Class permitting to initialise, start and reset the emulator. 
   * Object instance will be called and used by almost all other classes.
   */
 class NES() {
   // Init. all instances and state variables used for the emulator
-  val ui: UI = new UI
+  val ui: UI = new UI(this)
   var program: Program = null
 
   // Init. accessible components
@@ -91,12 +94,12 @@ class NES() {
           cpu.cyclesToHalt = 0
         }
       }
-      for (i <- cycles to 1) {
+      while(cycles > 0 && !stop) {
         if(ppu.curX == ppu.spr0HitX &&
           ppu.f_spVisibility == 1 &&
           ppu.scanline - 21 == ppu.spr0HitY) {
           // Set sprite 0 hit flag:
-          ppu.setStatusFlag(6, true) //6 stands for the sprite 0
+          ppu.setStatusFlag(6, true) //6 stands for the sprite 0 hit flag
         }
 
         if (ppu.requestEndFrame) {
@@ -109,14 +112,14 @@ class NES() {
         }
 
         if(!stop) {
-          ppu.curX
+          ppu.curX+=1
           if (ppu.curX == 341) {
             ppu.curX = 0
             ppu.endScanline
           }
+          cycles -= 1
         }
       }
-      cycles = 0
     }
     frameCount += 1
   }
@@ -124,8 +127,9 @@ class NES() {
   /** Stop the emulator */
   def stop: Unit = {
     timers.clearInterval(intervalFrame)
-    timers.clearInterval(intervalFrame)
+    timers.clearInterval(intervalFpsDisplay)
     isRunning = false
+    ui.updateStatus("Paused")
   }
 
   /** Reset all components */
@@ -139,31 +143,40 @@ class NES() {
   }
 
   /** Loads ROM into the ppu and the cpu*/
-  def loadRom(romUrl: String): Boolean = {
+  def loadRom(romUrl: String): Unit = {
     if (isRunning) {
       stop
     }
+    reset
     ui.updateStatus("Loading ROM...")
     // Load ROM file:
     rom = new ROM(this)
-    rom.openRom(romUrl)
-    if(rom.checkRom) {
-      reset
-      mmap = rom.createMapper
-      if (mmap == null) {
-        false
-      } else {
-        mmap.loadROM
-        //ppu.setMirroring(rom.getMirroringType)
-        oldRomUrl = romUrl
-        ui.updateStatus("Successfully loaded. Ready to be started.")
-        true
-      }
+    val romLoading: Future[Any] = rom.openRom(romUrl)
+    romLoading.onComplete {
+      case Success(value) =>
+        if(rom.checkRom) {
+          reset
+          mmap = rom.createMapper
+          if (mmap == null) {
+            //false
+            ui.updateStatus("Mapper was not loaded correctly")
+          } else {
+            mmap.loadROM
+            ppu.setMirroring(rom.getMirroringType)
+            oldRomUrl = romUrl
+            ui.updateStatus("Successfully loaded. Ready to be started.")
+            //true
+          }
+        }
+        else {
+          ui.updateStatus("Invalid ROM!")
+          //true
+        }
+
+      case Failure(e) =>
+        ui.updateStatus("Unable to load ROM")
     }
-    else {
-      ui.updateStatus("Invalid ROM!")
-      true
-    }
+
   }
 
   def reloadRom: Unit = {
