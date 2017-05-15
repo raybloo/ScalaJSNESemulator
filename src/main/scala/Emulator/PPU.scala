@@ -659,7 +659,6 @@ class PPU(nes: NES) {
     
     if (nes.showDisplay) {
       nes.ui.writeFrame(buffer, prevBuffer)
-      Dynamic.global.console.log(s"Something gets rendered")
     }
   }
   

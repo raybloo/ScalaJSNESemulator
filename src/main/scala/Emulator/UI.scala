@@ -20,7 +20,7 @@ class UI(nes: NES) {
   var romSelect: Input = null
   var status: Paragraph = null
   var startButton: Button = null
-  //TODO Buttons
+  //TODO Control Buttons
 
   var zoomed: Boolean = false
   var ctx: dom.CanvasRenderingContext2D = null
@@ -30,7 +30,7 @@ class UI(nes: NES) {
   var stopCallBack: Function[MouseEvent,_] = _
   var loadCallBack: Function[MouseEvent,_] = _
 
-  init //Comment this if you want to test the code
+  //init //Comment this if you want to test the code
 
   def init: Unit = {
 
@@ -49,12 +49,21 @@ class UI(nes: NES) {
     screen.width = 256
     screen.height = 240
 
-    romSelect.textContent = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes"
+    romSelect.value = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes"
     romSelect.size = 300
 
     startCallBack = {
       e: MouseEvent =>
         nes.start
+        startButton.onclick = stopCallBack
+        startButton.innerHTML = "Stop"
+    }
+
+    stopCallBack = {
+      e: MouseEvent =>
+        nes.stop
+        startButton.onclick = startCallBack
+        startButton.innerHTML = "Start!"
     }
 
     loadCallBack = {
@@ -98,7 +107,7 @@ class UI(nes: NES) {
 
   /** Loads ROM */
   def loadROM: Unit = {
-    nes.loadRom(romSelect.textContent)
+    nes.loadRom(romSelect.value)
   }
 
   /** Set the screen back to black with no transparency */

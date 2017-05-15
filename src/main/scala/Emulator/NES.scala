@@ -69,7 +69,6 @@ class NES() {
     var stop: Boolean = false
     ppu.startFrame()
     //cpu.emulateCycle()
-    Dynamic.global.console.log(s"Beginning of one frame loop")
     while(!stop) {
       if (cpu.cyclesToHalt == 0) {
         // Execute a CPU instruction
@@ -130,6 +129,7 @@ class NES() {
     timers.clearInterval(intervalFrame)
     timers.clearInterval(intervalFpsDisplay)
     isRunning = false
+    ui.updateStatus("Paused")
   }
 
   /** Reset all components */
