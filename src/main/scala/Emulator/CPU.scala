@@ -115,7 +115,6 @@ class CPU(nes: NES) {
     irqRequested = false
     irqType = 3
 
-    Dynamic.global.console.log(s"PROCESSOR COUNTER IS $pc")
   }
 
   /** Get all the flags into one single Byte */
@@ -307,8 +306,8 @@ class CPU(nes: NES) {
       case _ =>
         nes.stop
         Dynamic.global.console.log(s"Invalid Address Mode $addrMode")
-        Dynamic.global.console.log(s"Code Line $op")
-        Dynamic.global.console.log(s"Op address $opaddr")
+        Dynamic.global.console.log(s"caused by Op code $op")
+        Dynamic.global.console.log(s"at Op address $opaddr")
     }
     addr&=0xffff //Address mustn't exceed 16 bits
 

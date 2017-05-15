@@ -716,7 +716,7 @@ class PPU(nes: NES) {
   def writeSRAMAddress(address: Int): Unit = sramAddress = address
 
   /** CPU Register $2004 (R): Read from SPR-RAM (Sprite RAM). The address should be set first. */
-  def sramLoad(): Int = return spriteMem(sramAddress)
+  def sramLoad(): Int = spriteMem(sramAddress)
   
   /** CPU Register $2004 (R): Write to SPR-RAM (Sprite RAM). The address should be set first. */
   def sramWrite(value: Int): Unit = {
@@ -977,7 +977,7 @@ class PPU(nes: NES) {
       var ei : Int = (startScan+scanCount)<<8
       if (ei > 0xF000) ei = 0xF000
 
-      for (destIndex <- si to ei) if (pixrendered(destIndex) > 0xFF) buffer(destIndex) = bgbuffer.get(destIndex)
+      for (destIndex <- si until ei) if (pixrendered(destIndex) > 0xFF) buffer(destIndex) = bgbuffer.getOrElse(Array.fill(buffer.size)(0))(destIndex)
     }
 
     if (f_spVisibility == 1) renderSpritesPartially(startScan, scanCount, false)
@@ -1136,11 +1136,11 @@ class PPU(nes: NES) {
     
     var toffset : Int = -1
     var tIndexAdd : Int = (if (f_spPatternTable == 0) 0 else 256)
-    var t : Tile = null
+    var t: Tile = null
     var bufferIndex : Int = -1
         
-    var x :Int = sprX(0)
-    var y : Int = sprY(0) + 1
+    var x: Int = sprX(0)
+    var y: Int = sprY(0) + 1
         
     if (f_spriteSize == 0) { // 8x8 sprites.
       // Check range:
@@ -1194,7 +1194,7 @@ class PPU(nes: NES) {
         if (toffset < 8) { // first half of sprite.
           t = ptTile(sprTile(0) + (if (vertFlip(0)) 1 else 0) + (if ((sprTile(0)&1) != 0) 255 else 0))
         } else { // second half of sprite.
-          t = ptTile(sprTile(0) + (if (vertFlip(0)) 0 else 1) + (if ((sprTile(0)&1) != 0) 0 else 255))
+          t = ptTile(sprTile(0) + (if (vertFlip(0)) 0 else 1) + (if ((sprTile(0)&1) != 0) 255 else 0))
           if (vertFlip(0)) toffset = 15 - toffset
           else toffset -= 8
         }

@@ -74,29 +74,29 @@ abstract class Mapper(nes: NES) {
       case 0x2000 =>
         // PPU Control register 1
         nes.cpu.memory(address) = value
-      //nes.ppu.updateControlReg1(value)
+        nes.ppu.updateControlReg1(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2001 =>
         // PPU Control register 2
         nes.cpu.memory(address) = value
-      //nes.ppu.updateControlReg2(value)
+        nes.ppu.updateControlReg2(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2003 =>
       // Set Sprite RAM address:
-      nes.ppu.writeSRAMAddress(value)
+      nes.ppu.writeSRAMAddress(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2004 =>
       // Write to Sprite RAM:
-      nes.ppu.sramWrite(value)
+      nes.ppu.sramWrite(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2005 =>
       // Screen Scroll offsets:
-      nes.ppu.scrollWrite(value)
+      nes.ppu.scrollWrite(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2006 =>
       // Set VRAM address:
-      nes.ppu.writeVRAMAddress(value)
+      nes.ppu.writeVRAMAddress(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2007 =>
       // Write to VRAM:
-      nes.ppu.vramWrite(value)
+      nes.ppu.vramWrite(value) //PPU uses Int, therefore need to unsign
       case 0x4014 =>
       // Sprite Memory DMA Access
-      nes.ppu.sramDMA(value)
+      nes.ppu.sramDMA(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x4015 =>
       // Sound Channel Switch, DMC Status
       //TODO: nes.papu.writeReg(address, value)
@@ -193,6 +193,7 @@ abstract class Mapper(nes: NES) {
           // 0x4015:
           // Sound channel enable, DMC Status
           //TODO: nes.papu.readReg(address)
+            0
           case 1 =>
             // 0x4016:
             // Joystick 1 + Strobe
@@ -207,8 +208,8 @@ abstract class Mapper(nes: NES) {
               val sy = Math.max(0, mouseY - 4)
               val ey = Math.min(240, mouseY + 4)
               var w = 0
-              for (y <- sy to ey) {
-                for (x <- sx to ex) {
+              for (y <- sy until ey) {
+                for (x <- sx until ex) {
 
                   if (nes.ppu.buffer((y << 8) + x) == 0xffffff) {
                     w |= 0x1 << 3
@@ -218,7 +219,7 @@ abstract class Mapper(nes: NES) {
                 }
               }
               w |= (if (mousePressed) (0x1 << 4) else 0)
-              (joy2Read | w) & 0xFFFF
+              return ((joy2Read | w) & 0xFFFF)
             }
             else {
               joy2Read
@@ -229,7 +230,6 @@ abstract class Mapper(nes: NES) {
       case _ =>
         0
     }
-    0
   }
 
   /** Read state of first joypad */
