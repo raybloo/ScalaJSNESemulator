@@ -30,7 +30,7 @@ class UI(nes: NES) {
   var stopCallBack: Function[MouseEvent,_] = _
   var loadCallBack: Function[MouseEvent,_] = _
 
-  //init //Comment this if you want to test the code
+  init //Comment this if you want to test the code
 
   def init: Unit = {
 
@@ -131,7 +131,7 @@ class UI(nes: NES) {
   def writeFrame(buffer: Array[Int], prevBuffer: Array[Int]): Unit = {
     val imageData = canvasImageData.data
     var pixel: Int = 0
-    for (i <- 0 to (256*240-1)) {
+    for (i <- 0 until 256*240) {
       pixel = buffer(i)
       if (pixel != prevBuffer(i)) {
         var j = i*4

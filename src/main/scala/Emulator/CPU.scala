@@ -594,6 +594,7 @@ class CPU(nes: NES) {
         nes.stop
         Dynamic.global.console.log(s"Invalid Operation $op")
     }
+    //Dynamic.global.console.log(s"Op #$opinf has been executed")
     cycleCount
   }
 
@@ -639,8 +640,7 @@ class CPU(nes: NES) {
   /** Execute reset interrupt code */
   def doResetIrq: Unit = {
     pc_new = nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8)
-    Dynamic.global.console.log(s"RESET VECTOR 1: ${nes.mmap.load(0xfffc)}")
-    Dynamic.global.console.log(s"RESET VECTOR 2: ${nes.mmap.load(0xfffd)}")
+    Dynamic.global.console.log(s"RESET VECTOR IS: ${nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8)}")
     pc_new -= 1
     //Dynamic.global.console.log("RESET IRQ")
   }

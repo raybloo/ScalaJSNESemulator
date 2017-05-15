@@ -168,7 +168,7 @@ abstract class Mapper(nes: NES) {
           // main memory in addition
           // to as flags in the PPU.
           // (not in the real NES)
-            nes.ppu.readStatusRegister()
+            nes.cpu.unsign(nes.ppu.readStatusRegister())
           case 0x3 =>
             0
           case 0x4 =>

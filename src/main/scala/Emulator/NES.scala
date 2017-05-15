@@ -1,7 +1,7 @@
 package Emulator
 
 import scala.scalajs.js
-import js.timers
+import js.{Dynamic, timers}
 import scala.concurrent.Future
 import scala.scalajs.js.timers.SetIntervalHandle
 import scala.util.{Failure, Success}
@@ -69,6 +69,7 @@ class NES() {
     var stop: Boolean = false
     ppu.startFrame()
     //cpu.emulateCycle()
+    Dynamic.global.console.log(s"Beginning of one frame loop")
     while(!stop) {
       if (cpu.cyclesToHalt == 0) {
         // Execute a CPU instruction
@@ -94,12 +95,12 @@ class NES() {
           cpu.cyclesToHalt = 0
         }
       }
-      for (i <- cycles to 1) {
+      while(cycles > 0 && !stop) {
         if(ppu.curX == ppu.spr0HitX &&
           ppu.f_spVisibility == 1 &&
           ppu.scanline - 21 == ppu.spr0HitY) {
           // Set sprite 0 hit flag:
-          ppu.setStatusFlag(6, true) //6 stands for the sprite 0 hit
+          ppu.setStatusFlag(6, true) //6 stands for the sprite 0 hit flag
         }
 
         if (ppu.requestEndFrame) {
@@ -117,11 +118,11 @@ class NES() {
             ppu.curX = 0
             ppu.endScanline
           }
+          cycles -= 1
         }
       }
-      cycles = 0
     }
-    frameCount += 1 //TODO
+    frameCount += 1
   }
 
   /** Stop the emulator */

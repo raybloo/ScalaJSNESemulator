@@ -657,7 +657,10 @@ class PPU(nes: NES) {
       }
     }
     
-    if (nes.showDisplay) nes.ui.writeFrame(buffer, prevBuffer)
+    if (nes.showDisplay) {
+      nes.ui.writeFrame(buffer, prevBuffer)
+      Dynamic.global.console.log(s"Something gets rendered")
+    }
   }
   
   /** Render, then update wanted values */
@@ -693,7 +696,7 @@ class PPU(nes: NES) {
 
   def setStatusFlag(flag: Int, value: Boolean): Unit = {
     var n = 1<<flag
-    nes.cpu.memory(0x2002) = ((nes.cpu.memory (0x2002) & (255-n)) | (if (value) n else 0)).asInstanceOf[Byte]
+    nes.cpu.memory(0x2002) = ((nes.cpu.unsign(nes.cpu.memory(0x2002)) & (255-n)) | (if (value) n else 0)).toByte
   }
   
   /** CPU Register $2002: Read the Status Register. */
@@ -994,74 +997,75 @@ class PPU(nes: NES) {
     curNt = ntable1(cntV + cntV + cntH)
         
     if (scan < 240 && (scan - cntFV) >= 0) {
-      var tscanoffset : Int = cntFV<<3
-      var targetBuffer : Array[Int] = bgbuffer.getOrElse(buffer)
+      val tscanoffset : Int = cntFV<<3
+      val targetBuffer : Array[Int] = bgbuffer.getOrElse(buffer)
       
       var t : Tile = null
       var tpix : Array[Int] = null
       var att, col : Int = 0
       
-      for (tile <- 0 to 32) {
-        if (scan >= 0) {
-          // Fetch tile & attrib data:
-          if (validTileData) {
-            // Get data from array:
-            t = scantile(tile)
-            
-            tpix = t.pix
-            att = attrib(tile)
-          } else {
-            // Fetch data:
-            t = ptTile(baseTile + nameTable(curNt).getTileIndex(cntHT, cntVT))
-            tpix = t.pix
-            att = nameTable(curNt).getAttrib(cntHT, cntVT)
-            scantile(tile) = t
-            attrib(tile) = att
-          }
-          
-          // Render tile scanline:
-          var sx : Int = 0
-          var x : Int = (tile<<3) - regFH
-
-          if (x > -8) {
-            if (x < 0) {
-              destIndex -= x
-              sx = -x
-            }
-            
-            if (t.opaque(cntFV)) {
-              while(sx < 8) {
-                targetBuffer(destIndex) = imgPalette(tpix(tscanoffset + sx)+att)
-                pixrendered(destIndex) |= 256
-                destIndex += 1
-                sx += 1
-              }
+      for (tile <- 0 until 32) {
+        if (!((validTileData && scantile(tile) == null)||(!validTileData && ptTile(baseTile + nameTable(curNt).getTileIndex(cntHT, cntVT)) == null))) {
+          if (scan >= 0) {
+            // Fetch tile & attrib data:
+            if (validTileData) {
+              // Get data from array:
+              t = scantile(tile)
+              tpix = t.pix
+              att = attrib(tile)
             } else {
-              while(sx < 8) {
-                col = tpix(tscanoffset + sx)
-                if(col != 0) {
-                  targetBuffer(destIndex) = imgPalette(col+att)
+              // Fetch data:
+              t = ptTile(baseTile + nameTable(curNt).getTileIndex(cntHT, cntVT))
+              tpix = t.pix
+              att = nameTable(curNt).getAttrib(cntHT, cntVT)
+              scantile(tile) = t
+              attrib(tile) = att
+            }
+
+            // Render tile scanline:
+            var sx: Int = 0
+            var x: Int = (tile << 3) - regFH
+
+            if (x > -8) {
+              if (x < 0) {
+                destIndex -= x
+                sx = -x
+              }
+
+              if (t.opaque(cntFV)) {
+                while (sx < 8) {
+                  targetBuffer(destIndex) = imgPalette(tpix(tscanoffset + sx) + att)
                   pixrendered(destIndex) |= 256
+                  destIndex += 1
+                  sx += 1
                 }
-                destIndex += 1
-                sx += 1
+              } else {
+                while (sx < 8) {
+                  col = tpix(tscanoffset + sx)
+                  if (col != 0) {
+                    targetBuffer(destIndex) = imgPalette(col + att)
+                    pixrendered(destIndex) |= 256
+                  }
+                  destIndex += 1
+                  sx += 1
+                }
               }
             }
           }
-        }
-                    
-        // Increase Horizontal Tile Counter:
-        if (cntHT + 1 == 32) {
-          cntHT = 0
-          cntH += 1
-          cntH %= 2
-          curNt = ntable1((cntV<<1)+cntH)    
-        }
-      }
-            
-      // Tile data for one row should now have been fetched, so the data in the array is valid.
-      validTileData = true
 
+          // Increase Horizontal Tile Counter:
+          cntHT += 1
+          if (cntHT == 32) {
+            cntHT = 0
+            cntH += 1
+            cntH %= 2
+            curNt = ntable1((cntV << 1) + cntH)
+          }
+        }
+
+        // Tile data for one row should now have been fetched, so the data in the array is valid.
+        validTileData = true
+      }
     }
         
     // update vertical scroll:
