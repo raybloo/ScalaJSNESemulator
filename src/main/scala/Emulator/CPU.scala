@@ -271,10 +271,10 @@ class CPU(nes: NES) {
         addr+=x
       case OpData.ABSOLUTE_YINDEXED => //Absolute Indexed mode Y as index
         addr = load2Words(opaddr+2) //like Zero Page Indexed but with the high byte
-        if((addr&0xff00)!=((addr+x)&0xff00)){
+        if((addr&0xff00)!=((addr+y)&0xff00)){
           cycleAdd = 1
         }
-        addr+=x
+        addr+=y
       case OpData.XINDEXED_INDIRECT => // Pre-indexed Indirect mode
         // Find the 16-bit address starting at the given location plus
         // the current X register. The value is the contents of that
@@ -299,13 +299,13 @@ class CPU(nes: NES) {
       case OpData.INDIRECT => //Indirect Absolute mode, Find the 16-bit address contained at the given location
         addr = load2Words(opaddr+2)
         if(addr <= 0x1FFF) {
-          addr = unsign(memory(addr)) + (unsign(memory((addr & 0xff)) | (((addr & 0xff) + 1) & 0xff)) << 8) //Read from address given in op
+          addr = unsign(memory(addr)) + (unsign(memory((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff))) << 8) //Read from address given in op
         } else {
-          addr = unsign(nes.mmap.load(addr)) + (nes.mmap.load((addr & 0xff) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
+          addr = unsign(nes.mmap.load(addr)) + (nes.mmap.load((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
         }
       case _ =>
         nes.stop
-        Dynamic.global.console.log(s"Invalid Address Mode $addrMode")
+        Dynamic.global.console.log(s"ERROR: Invalid Address Mode $addrMode")
         Dynamic.global.console.log(s"caused by Op code $op")
         Dynamic.global.console.log(s"at Op address $opaddr")
     }
@@ -318,8 +318,8 @@ class CPU(nes: NES) {
         overflowFlag = (!(((a ^ load1Word(addr)) & 0x80)!=0) && (((a ^ temp) & 0x80))!=0)
         carryFlag = temp > 0xff
         negativeFlag = (temp & 0x80) != 0
-        zeroFlag = a == 0
         a = temp & 0xff
+        zeroFlag = a == 0
         cycleCount += cycleAdd
       case 1 => //AND: And memory with accumulator, stores in accumulator
         a = a & load1Word(addr)
@@ -591,7 +591,7 @@ class CPU(nes: NES) {
         zeroFlag = y == 0
       case _ =>
         nes.stop
-        Dynamic.global.console.log(s"Invalid Operation $op")
+        Dynamic.global.console.log(s"ERROR: Invalid Operation $op")
     }
     //Dynamic.global.console.log(s"Op #$opinf has been executed")
     cycleCount
