@@ -306,13 +306,14 @@ abstract class Mapper(nes: NES) {
       //}
     }
     else {
-      Dynamic.global.console("No CHR-ROM banks found")
+      Dynamic.global.console.log("No CHR-ROM banks found")
     }
   }
 
   /** Load battery ram if any. Unused for now */
   def loadBatteryRam: Unit = {
     if (nes.rom.hasBatteryRam) {
+      Dynamic.global.console.log("ERROR: Emulator does not support PRG RAM")
       /*
           var ram = nes.rom.batteryRam;
           if (ram !== null && ram.length == 0x2000) {
@@ -320,7 +321,7 @@ abstract class Mapper(nes: NES) {
             JSNES.Utils.copyArrayElements(ram, 0, nes.cpu.mem, 0x6000, 0x2000)
           }
           */
-    } //I'll need more time to implement this, since I don't quite understand this
+    } //Edit: It seems like it wasn't implemented in the original emulator
   }
 
   /** Load one program rom bank of 16KB */

@@ -155,7 +155,6 @@ class NES() {
     romLoading.onComplete {
       case Success(value) =>
         if(rom.checkRom) {
-          reset
           mmap = rom.createMapper
           if (mmap == null) {
             //false
