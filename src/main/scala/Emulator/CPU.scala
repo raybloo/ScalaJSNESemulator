@@ -31,7 +31,7 @@ class CPU(nes: NES) {
   var overflowFlag: Boolean = false //6th bit
   var negativeFlag: Boolean = false //7th bit
 
-  //New Flags, some flags and the pc need to have a place to store their new values
+  //New Flags, some flags and the pc need to have a place to store their new values (useful, when returning from interrupts)
   var pc_new: Int = 0
   var interruptDisable_new: Boolean = true
   var unused_new: Boolean = true
@@ -59,7 +59,7 @@ class CPU(nes: NES) {
     memory = new Array[Byte](0x10000)
 
     //Internal RAM
-    for(i <- 0 to 0x2000) {
+    for(i <- 0 until 0x2000) {
       memory(i) =  -1 //0xFF
     }
 
@@ -73,7 +73,7 @@ class CPU(nes: NES) {
     }
 
     //Everything else set to 0
-    for(i <- 0x2001 to 0x8000) {
+    for(i <- 0x2001 until memory.length) {
       memory(i) =  0x00
     }
 
@@ -87,21 +87,20 @@ class CPU(nes: NES) {
     // Reset Program counter:
     pc = 0x7FFF
     pc_new = 0x7FFF
-    // Reset Status register:
-    p = 0x28
-    setProcessorFlags(0x28)
 
     // Set flags:
     carryFlag = false
-    decimalModeFlag = false
+    zeroFlag = false
     interruptDisable = true
-    interruptDisable_new = true
+    decimalModeFlag = false
+    breakCommand = true
+    unused = true
     overflowFlag = false
     negativeFlag = false
-    zeroFlag = false
-    unused = true
+
+    // Set flag buffers:
+    interruptDisable_new = true
     unused_new = true
-    breakCommand = true
     breakCommand_new = true
     p = getProcessorFlags
 
@@ -167,7 +166,7 @@ class CPU(nes: NES) {
   /**Load 1 byte from memory */
   def load1Word(address: Int): Int = {
     if (address < 0x2000) {
-      unsign(memory(address & 0x7ff))
+      unsign(memory(address & 0x7ff)) //address under 0x2000 are mirrored every 0x800
     }
     else {
       unsign(nes.mmap.load(address))
@@ -422,7 +421,7 @@ class CPU(nes: NES) {
       case 20  => //DEC: Decrement memory by one
         temp = (load1Word(addr)-1)
         negativeFlag = (temp & 0x80) != 0
-        zeroFlag = (temp&0xff) == 0
+        zeroFlag = temp == 0
         write(addr,temp.toByte)
       case 21  => //DEX: Decrement index X by one
         x = (x-1)&0xff
@@ -452,7 +451,7 @@ class CPU(nes: NES) {
         zeroFlag = y == 0
       case 27  => //JMP: Jump to new location
         pc = addr-1
-      case 28  => //JSR: Jump to new location, pushing the 2 address bytes on the stack
+      case 28  => //JSR: Jump to new location, pushing the return address on the stack
         push((pc>>8).toByte)
         push(pc.toByte)
         pc = addr-1
@@ -460,14 +459,17 @@ class CPU(nes: NES) {
         a = load1Word(addr)
         negativeFlag = (a & 0x80) != 0
         zeroFlag = a == 0
+        cycleCount += cycleAdd
       case 30 => //LDX: Load index X with memory
         x = load1Word(addr)
         negativeFlag = (x & 0x80) != 0
         zeroFlag = x == 0
+        cycleCount += cycleAdd
       case 31 => //LDY: Load index Y with memory
         y = load1Word(addr)
         negativeFlag = (y & 0x80) != 0
         zeroFlag = y == 0
+        cycleCount += cycleAdd
       case 32 => //LSR: Shift right one bit
         if(addrMode == OpData.ACCUMULATOR) {
           carryFlag = (a & 0x01) != 0
@@ -483,9 +485,9 @@ class CPU(nes: NES) {
         negativeFlag = false //when right shifting, the sign bit always becomes 0
       case 33 => //NOP: No operation
       case 34 => //ORA: OR memory with accumulator, stores in accumulator
-        temp = (load1Word(addr)|a)&0xff
-        negativeFlag = (temp & 0x80) != 0
-        zeroFlag = temp == 0
+        a = (load1Word(addr)|a)&0xff
+        negativeFlag = (a & 0x80) != 0
+        zeroFlag = a == 0
         if(addrMode!=OpData.INDIRECT_YINDEXED) cycleCount += cycleAdd
       case 35 => //PHA: Push accumulator on stack
         push(a.toByte)
@@ -498,6 +500,7 @@ class CPU(nes: NES) {
         zeroFlag = a == 0
       case 38 => //PLP: Pop processor status from stack
         setProcessorFlags(pop.toByte)
+        unused = true
       case 39 => //ROL: Rotate one bit left
         if(addrMode == OpData.ACCUMULATOR){
           temp = a
@@ -535,7 +538,7 @@ class CPU(nes: NES) {
         pc += (pop<<8)
         if(pc == 0xffff) {
           //TODO exit function
-          return -1
+          return 0
         }
         pc -= 1
         unused = true
@@ -544,10 +547,10 @@ class CPU(nes: NES) {
         pc += (pop<<8)
         if(pc == 0xffff) {//return from NSF play routine
           //TODO exit function
-          return -1
+          return 0
         }
       case 43 => //SBC: Subtract memory from accumulator with borrow
-        temp = a-load1Word(addr)-(1-(if(carryFlag)1 else 0))
+        temp = a-load1Word(addr)-(if(carryFlag)0 else 1)
         negativeFlag = (temp & 0x80) != 0
         zeroFlag = (temp&0xff) == 0
         overflowFlag = ((((a^temp)&0x80)!=0 && ((a^load1Word(addr))&0x80)!=0))
@@ -592,8 +595,9 @@ class CPU(nes: NES) {
       case _ =>
         nes.stop
         Dynamic.global.console.log(s"ERROR: Invalid Operation $op")
+        Dynamic.global.console.log(s"at $opaddr")
     }
-    //Dynamic.global.console.log(s"Op #$opinf has been executed")
+    Dynamic.global.console.log(s"Op #$opinf has been executed")
     cycleCount
   }
 
@@ -607,7 +611,7 @@ class CPU(nes: NES) {
 
   /** Indicates whether 2 addresses points to the same 1/4 KB of memory */
   def pageCrossed(addr1: Int, addr2: Int): Boolean = {
-    (addr1&0xff00)!=(addr2&0xff000)
+    (addr1&0xff00)!=(addr2&0xff00)
   }
 
   /** Execute interrupt code */
@@ -659,7 +663,7 @@ class CPU(nes: NES) {
   }
 
   /** Wrap the stack pointer */
-  def stackwrap = {
+  def stackwrap: Unit = {
     sp = 0x0100 | (sp&0xff)
   }
 
