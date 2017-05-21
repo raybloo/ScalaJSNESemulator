@@ -118,7 +118,7 @@ class ROM(nes: NES) {
   def getChrRom: Array[Array[Byte]] = {
     chrRom = new Array(getChrRomSize)
     var offset = 16 + (if(hasTrainer) 512 else 0)
-    offset += 0x4000*((getHeader(4).toInt + 0x100) % 0x100)
+    offset += 0x4000*getPrgRomSize
     for (i <- 0 until getChrRomSize) {
       chrRom(i) = new Array(0x2000)
       if(offset + 0x2000 <= fullRom.length) {
@@ -133,12 +133,37 @@ class ROM(nes: NES) {
   def getVromTiles: Array[Array[PPU.Tile]] = {
     vromTile = new Array(getChrRomSize*2) // 2 tiles per 8k rom bank (1 per 4k bank)
     for (i <- 0 until (getChrRomSize*2)) {
-      vromTile(i) = new Array(0x100)
-      for (j <- 0 to 100) {
+      vromTile(i) = new Array[PPU.Tile](0x100)
+      for (j <- 0 until 0x100) {
         vromTile(i)(j) = new PPU.Tile
       }
     }
     vromTile
+  }
+
+  /** Fill the tiles with chrrom content */
+  def fillInTiles: Unit = {
+    var tileIndex = 0
+    var leftOver = 0
+    for (v <- 0 until vromTile.length) { //2x chrrom total size
+      for (i <- 0 until 0x1000) { // 1/2 chrrom element (bank)
+        tileIndex = i >> 4
+        leftOver = i % 0x10
+        if ((v % 2) == 0) { //Lower tile
+          if (leftOver < 8) {
+            vromTile(v)(tileIndex).setScanline(leftOver, chrRom(v / 2)(i), chrRom(v / 2)(i + 8))
+          } else {
+            vromTile(v)(tileIndex).setScanline(leftOver - 8, chrRom(v / 2)(i - 8), chrRom(v / 2)(i))
+          }
+        } else { //Upper tile
+          if (leftOver < 8) {
+            vromTile(v)(tileIndex).setScanline(leftOver, chrRom(v / 2)(i + 0x1000), chrRom(v / 2)(i + 8 + 0x1000))
+          } else {
+            vromTile(v)(tileIndex).setScanline(leftOver - 8, chrRom(v / 2)((i - 8) + 0x1000), chrRom(v / 2)(i + 0x1000))
+          }
+        }
+      }
+    }
   }
 
   /** Returns true when the rom has battery ram */
@@ -232,8 +257,8 @@ class ROM(nes: NES) {
           prgRom = getPrgRom
           chrRom = getChrRom
           vromTile = getVromTiles
+          fillInTiles
           nes.mmap = createMapper
-
         } else {
           Dynamic.global.console.log("File is not a valid ROM")
           fullRom = null

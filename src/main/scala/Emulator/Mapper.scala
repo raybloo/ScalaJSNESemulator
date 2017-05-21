@@ -74,29 +74,29 @@ abstract class Mapper(nes: NES) {
       case 0x2000 =>
         // PPU Control register 1
         nes.cpu.memory(address) = value
-      //nes.ppu.updateControlReg1(value)
+        nes.ppu.updateControlReg1(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2001 =>
         // PPU Control register 2
         nes.cpu.memory(address) = value
-      //nes.ppu.updateControlReg2(value)
+        nes.ppu.updateControlReg2(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2003 =>
       // Set Sprite RAM address:
-      nes.ppu.writeSRAMAddress(value)
+      nes.ppu.writeSRAMAddress(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2004 =>
       // Write to Sprite RAM:
-      nes.ppu.sramWrite(value)
+      nes.ppu.sramWrite(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2005 =>
       // Screen Scroll offsets:
-      nes.ppu.scrollWrite(value)
+      nes.ppu.scrollWrite(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2006 =>
       // Set VRAM address:
-      nes.ppu.writeVRAMAddress(value)
+      nes.ppu.writeVRAMAddress(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2007 =>
       // Write to VRAM:
-      nes.ppu.vramWrite(value)
+      nes.ppu.vramWrite(value) //PPU uses Int, therefore need to unsign
       case 0x4014 =>
       // Sprite Memory DMA Access
-      nes.ppu.sramDMA(value)
+      nes.ppu.sramDMA(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x4015 =>
       // Sound Channel Switch, DMC Status
       //TODO: nes.papu.writeReg(address, value)
@@ -127,7 +127,7 @@ abstract class Mapper(nes: NES) {
       nes.cpu.unsign(nes.cpu.memory(addr))
     } else if ((addr & 0xffff) >= 0x2000) {
       // I/O Ports.
-      regLoad(addr)
+      regLoad(addr & 0xffff)
     } else {
       // RAM (mirrored)
       nes.cpu.unsign(nes.cpu.memory(addr & 0x7FF))
@@ -188,11 +188,17 @@ abstract class Mapper(nes: NES) {
         }
       case 4 =>
         // Sound+Joypad registers
+        Dynamic.global.console.log("Joypad or Sound registers were read !!!!!")
+        // /!\/!\/!\/!\/!\/!\
+        // Maybe this could create an error since
+        // joypad and papu aren't implemented
+
         (((addr & 0xffff) - 0x4015): @switch) match {
           case 0 =>
           // 0x4015:
           // Sound channel enable, DMC Status
           //TODO: nes.papu.readReg(address)
+            0
           case 1 =>
             // 0x4016:
             // Joystick 1 + Strobe
@@ -207,18 +213,18 @@ abstract class Mapper(nes: NES) {
               val sy = Math.max(0, mouseY - 4)
               val ey = Math.min(240, mouseY + 4)
               var w = 0
-              for (y <- sy to ey) {
-                for (x <- sx to ex) {
+              for (y <- sy until ey) {
+                for (x <- sx until ex) {
 
                   if (nes.ppu.buffer((y << 8) + x) == 0xffffff) {
                     w |= 0x1 << 3
-                    Dynamic.global.console("Clicked on white!")
+                    Dynamic.global.console.log("Clicked on white!")
                     return 0
                   }
                 }
               }
               w |= (if (mousePressed) (0x1 << 4) else 0)
-              (joy2Read | w) & 0xFFFF
+              return ((joy2Read | w) & 0xFFFF)
             }
             else {
               joy2Read
@@ -229,7 +235,6 @@ abstract class Mapper(nes: NES) {
       case _ =>
         0
     }
-    0
   }
 
   /** Read state of first joypad */
@@ -306,13 +311,14 @@ abstract class Mapper(nes: NES) {
       //}
     }
     else {
-      Dynamic.global.console("No CHR-ROM banks found")
+      Dynamic.global.console.log("No CHR-ROM banks found")
     }
   }
 
   /** Load battery ram if any. Unused for now */
   def loadBatteryRam: Unit = {
     if (nes.rom.hasBatteryRam) {
+      Dynamic.global.console.log("ERROR: Emulator does not support PRG RAM")
       /*
           var ram = nes.rom.batteryRam;
           if (ram !== null && ram.length == 0x2000) {
@@ -320,12 +326,11 @@ abstract class Mapper(nes: NES) {
             JSNES.Utils.copyArrayElements(ram, 0, nes.cpu.mem, 0x6000, 0x2000)
           }
           */
-    } //I'll need more time to implement this, since I don't quite understand this
+    } //Edit: It seems like it wasn't implemented in the original emulator
   }
 
   /** Load one program rom bank of 16KB */
-  def loadRomBank(bank: Int, address: Int): Unit = {
-    //default: 16KB banks
+  def loadRomBank(bank: Int, address: Int): Unit = { //default: 16KB banks
     // Loads a ROM bank into the specified address.
     //var data = this.nes.rom.rom[bank];
     //cpuMem.write(address,data,data.length);
@@ -467,7 +472,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
       super.write(address, value)
     } else {
       // See what should be done with the written value:
-      if ((value & 128) != 0) {
+      if ((value & 0x80) != 0) {
 
         // Reset buffering:
         regBufferCounter = 0
@@ -511,14 +516,14 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
           mirroring = tmp
           if ((mirroring & 2) == 0) {
             // SingleScreen mirroring overrides the other setting:
-            //nes.ppu.setMirroring(nes.rom.SinglescreenMirroring)
+            nes.ppu.setMirroring(nes.rom.SinglescreenMirroring)
           }
           // Not overridden by SingleScreen mirroring.
           else if ((mirroring & 1) != 0) {
-            //nes.ppu.setMirroring(nes.rom.HorizontalMirroring)
+            nes.ppu.setMirroring(nes.rom.HorizontalMirroring)
           }
           else {
-            //nes.ppu.setMirroring(nes.rom.VerticalMirroring)
+            nes.ppu.setMirroring(nes.rom.VerticalMirroring)
           }
         }
 
@@ -639,7 +644,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
 
   override def loadROM {
     if (!nes.rom.checkRom) {
-      scalajs.js.Dynamic.global.alert("MMC1: Invalid ROM! Unable to load.")
+      Dynamic.global.alert("MMC1: Invalid ROM! Unable to load.")
     } else {
 
       // Load PRG-ROM:
@@ -660,7 +665,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
 
 //Mapper for Castelvania 3, not yet fully working: Nintendo MMC5
 class MMC5(nes: NES) extends Mapper(nes) { //mapper number 5
-var prg_size: Int = 0
+  var prg_size: Int = 0
   var chr_size: Int = 0
   var sram_we_a: Int = 0
   var sram_we_b: Int =  0
