@@ -240,7 +240,7 @@ class CPU(nes: NES) {
 
 
     //Find the effective address
-    var addr = 0
+    var addr: Int = 0
     (addrMode: @switch) match {
       case OpData.ZERO_PAGE => //Use the address given after the opcode. zero page have no high byte
         addr = load1Word(opaddr+2)
@@ -297,7 +297,7 @@ class CPU(nes: NES) {
         addr+=y
       case OpData.INDIRECT => //Indirect Absolute mode, Find the 16-bit address contained at the given location
         addr = load2Words(opaddr+2)
-        if(addr <= 0x1FFF) {
+        if(addr < 0x1FFF) {
           addr = unsign(memory(addr)) + (unsign(memory((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff))) << 8) //Read from address given in op
         } else {
           addr = unsign(nes.mmap.load(addr)) + (nes.mmap.load((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
@@ -597,7 +597,8 @@ class CPU(nes: NES) {
         Dynamic.global.console.log(s"ERROR: Invalid Operation $op")
         Dynamic.global.console.log(s"at $opaddr")
     }
-    Dynamic.global.console.log(s"Op #$opinf has been executed")
+    //Dynamic.global.console.log(s"Op #$opinf has been executed")
+    //Dynamic.global.console.log(s"with addressing mode #$addrMode")
     cycleCount
   }
 

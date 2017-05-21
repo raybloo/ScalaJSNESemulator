@@ -23,9 +23,9 @@ class PPU(nes: NES) {
     val name : String = n
 	
     // Initially filled with 0's.
-    var tile : Array[Int] = new Array(width*height)(0)
+    var tile : Array[Int] = Array.fill(width*height)(0)
     /** Controls which palette is assigned to each part of the background.  */
-    var attrib : Array[Int] = new Array(width*height)(0)
+    var attrib : Array[Int] = Array.fill(width*height)(0)
 	
     /** Returns the searched tile. */
     def getTileIndex(x: Int, y: Int): Int = tile(y*width+x)
@@ -37,13 +37,13 @@ class PPU(nes: NES) {
       * Note that the for loop (and bit operations) is necessary to select only what we want to change, as each byte in the attribute table controls a palette of a 32x32 pixel.
       */
     def writeAttrib(index: Int, value: Int): Unit = {
-      var basex: Int = (index % 8) * 4
-      var basey : Int = (scala.math.floor(index / 8) * 4).asInstanceOf[Int]
+      val basex: Int = (index % 8) * 4
+      val basey : Int = (index / 8) * 4
       var add : Int = 0
       var tx, ty : Int = 0
       var attindex : Int = 0
 		
-      var sqy, sqx : Int = 0
+      //var sqy, sqx : Int = 0
       for (sqy <- 0 until 2; sqx <- 0 until 2) {
         add = (value>>(2*(sqy*2+sqx)))&3 // Bit operators
         for (y <- 0 until 2; x <- 0 until 2) {
@@ -1281,7 +1281,7 @@ class PPU(nes: NES) {
   
   /** Updates the internal pattern table buffers with new given value. */
   def patternWrite(address: Int, value: Int): Unit = {
-    var tileIndex : Int = Math.floor(address / 16).asInstanceOf[Int]
+    var tileIndex : Int = address / 16
     var leftOver : Int = address % 16
 
     if (leftOver < 8) ptTile(tileIndex).setScanline(leftOver, value, vramMem(address + 8))

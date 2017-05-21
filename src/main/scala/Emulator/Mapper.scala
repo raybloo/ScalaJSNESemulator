@@ -127,7 +127,7 @@ abstract class Mapper(nes: NES) {
       nes.cpu.unsign(nes.cpu.memory(addr))
     } else if ((addr & 0xffff) >= 0x2000) {
       // I/O Ports.
-      regLoad(addr)
+      regLoad(addr & 0xffff)
     } else {
       // RAM (mirrored)
       nes.cpu.unsign(nes.cpu.memory(addr & 0x7FF))
@@ -188,6 +188,11 @@ abstract class Mapper(nes: NES) {
         }
       case 4 =>
         // Sound+Joypad registers
+        Dynamic.global.console.log("Joypad or Sound registers were read !!!!!")
+        // /!\/!\/!\/!\/!\/!\
+        // Maybe this could create an error since
+        // joypad and papu aren't implemented
+
         (((addr & 0xffff) - 0x4015): @switch) match {
           case 0 =>
           // 0x4015:
@@ -213,7 +218,7 @@ abstract class Mapper(nes: NES) {
 
                   if (nes.ppu.buffer((y << 8) + x) == 0xffffff) {
                     w |= 0x1 << 3
-                    Dynamic.global.console("Clicked on white!")
+                    Dynamic.global.console.log("Clicked on white!")
                     return 0
                   }
                 }
@@ -325,8 +330,7 @@ abstract class Mapper(nes: NES) {
   }
 
   /** Load one program rom bank of 16KB */
-  def loadRomBank(bank: Int, address: Int): Unit = {
-    //default: 16KB banks
+  def loadRomBank(bank: Int, address: Int): Unit = { //default: 16KB banks
     // Loads a ROM bank into the specified address.
     //var data = this.nes.rom.rom[bank];
     //cpuMem.write(address,data,data.length);
@@ -468,7 +472,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
       super.write(address, value)
     } else {
       // See what should be done with the written value:
-      if ((value & 128) != 0) {
+      if ((value & 0x80) != 0) {
 
         // Reset buffering:
         regBufferCounter = 0
@@ -512,14 +516,14 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
           mirroring = tmp
           if ((mirroring & 2) == 0) {
             // SingleScreen mirroring overrides the other setting:
-            //nes.ppu.setMirroring(nes.rom.SinglescreenMirroring)
+            nes.ppu.setMirroring(nes.rom.SinglescreenMirroring)
           }
           // Not overridden by SingleScreen mirroring.
           else if ((mirroring & 1) != 0) {
-            //nes.ppu.setMirroring(nes.rom.HorizontalMirroring)
+            nes.ppu.setMirroring(nes.rom.HorizontalMirroring)
           }
           else {
-            //nes.ppu.setMirroring(nes.rom.VerticalMirroring)
+            nes.ppu.setMirroring(nes.rom.VerticalMirroring)
           }
         }
 
@@ -640,7 +644,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
 
   override def loadROM {
     if (!nes.rom.checkRom) {
-      scalajs.js.Dynamic.global.alert("MMC1: Invalid ROM! Unable to load.")
+      Dynamic.global.alert("MMC1: Invalid ROM! Unable to load.")
     } else {
 
       // Load PRG-ROM:
@@ -661,7 +665,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
 
 //Mapper for Castelvania 3, not yet fully working: Nintendo MMC5
 class MMC5(nes: NES) extends Mapper(nes) { //mapper number 5
-var prg_size: Int = 0
+  var prg_size: Int = 0
   var chr_size: Int = 0
   var sram_we_a: Int = 0
   var sram_we_b: Int =  0
