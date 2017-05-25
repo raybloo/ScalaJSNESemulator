@@ -13,7 +13,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class NES() {
   // Init. all instances and state variables used for the emulator
   val ui: UI = new UI(this)
-  var program: Program = null
 
   // Init. accessible components
   var cpu: CPU = new CPU(this)
@@ -41,12 +40,6 @@ class NES() {
   mapperTable(5) = (() => new MMC5(this))
 
   ui.updateStatus("Ready to load ROM")
-
-  def loadProgram(data: Int): Unit = {
-    program = new Program(this)
-    program.load(data)
-    reset
-  }
 
   /** Launch the emulator */
   def start: Unit = {
