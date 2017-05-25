@@ -7,7 +7,7 @@ import scala.scalajs.js.timers.SetIntervalHandle
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-/** Class permitting to initialise, start and reset the emulator. 
+/** Class permitting to initialise, start and reset the emulator.
   * Object instance will be called and used by almost all other classes.
   */
 class NES() {
