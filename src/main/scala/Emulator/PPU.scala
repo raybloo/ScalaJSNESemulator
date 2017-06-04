@@ -8,219 +8,6 @@ import scala.scalajs.js.Dynamic
 class PPU(nes: NES) {
   import PPU._
 
-  /** The NameTable will contain two arrays:
-    * - Tile:
-    * 			Each byte in this array controls one 8x8 pixel character cell, and each nametable has 30 rows of 32 tiles each.
-    *
-    * - Attribute (Attrib):
-    *			The attribute table is a 64-byte array at the end of each nametable that controls which palette is assigned to each part of the background.
-    *
-    * A NES will contain 4 NameTables, arranged in a 2x2 pattern.
-    */
-  class NameTable(w: Int, h: Int, n: String) {
-    val width : Int = w
-    val height : Int = h
-    val name : String = n
-
-    // Initially filled with 0's.
-    var tile : Array[Int] = Array.fill(width*height)(0)
-    /** Controls which palette is assigned to each part of the background.  */
-    var attrib : Array[Int] = Array.fill(width*height)(0)
-
-    /** Returns the searched tile. */
-    def getTileIndex(x: Int, y: Int): Int = tile(y*width+x)
-
-    /** Returns the searched attribute. */
-    def getAttrib(x: Int, y: Int): Int = attrib(y*width+x)
-
-    /** Writes given value in given index in the attributes table.
-      * Note that the for loop (and bit operations) is necessary to select only what we want to change, as each byte in the attribute table controls a palette of a 32x32 pixel.
-      */
-    def writeAttrib(index: Int, value: Int): Unit = {
-      val basex: Int = (index % 8) * 4
-      val basey : Int = (index / 8) * 4
-      var add : Int = 0
-      var tx, ty : Int = 0
-      var attindex : Int = 0
-
-      //var sqy, sqx : Int = 0
-      for (sqy <- 0 until 2; sqx <- 0 until 2) {
-        add = (value>>(2*(sqy*2+sqx)))&3 // Bit operators
-        for (y <- 0 until 2; x <- 0 until 2) {
-          tx = basex+sqx*2+x
-          ty = basey+sqy*2+y
-          attindex = ty*width+tx
-          attrib(ty*width+tx) = (add<<2)&12
-        }
-      }
-    }
-
-    // TODO if necessary : To and from JSON
-  }
-
-  /** The PaletteTable will contain two arrays and one global variable:
-    * - curTable:
-    *     Contains the used color palette. Can be either the default NES, NTSC or PAL.
-    *
-    * - Emphasis Table (emphTable):
-    *	    Will contain the corresponding color emphasis for each color of the palette.
-    *
-    * - Emphasis (currentEmph and emph):
-    *      The color emphasis will be used to change the luminance amd chrominance phasor of each color, by using the RGB components.
-    *
-    * Each NES has only one color Palette.
-    */
-  class PaletteTable {
-    var curTable : Array[Int] = new Array[Int](64)
-    var emphTable : Array[Array[Int]] = Array.ofDim[Int](8, 64)
-    var currentEmph : Int = -1
-
-    /** Resets the Palette */
-    def reset(): Unit = setEmphasis(0)
-
-    /** Loads the NTSC Palette */
-    def loadNTSCPalette(): Unit = {
-      curTable = Array(0x525252, 0xB40000, 0xA00000, 0xB1003D, 0x740069, 0x00005B, 0x00005F, 0x001840, 0x002F10, 0x084A08, 0x006700, 0x124200, 0x6D2800, 0x000000, 0x000000, 0x000000, 0xC4D5E7, 0xFF4000, 0xDC0E22, 0xFF476B, 0xD7009F, 0x680AD7, 0x0019BC, 0x0054B1, 0x006A5B, 0x008C03, 0x00AB00, 0x2C8800, 0xA47200, 0x000000, 0x000000, 0x000000, 0xF8F8F8, 0xFFAB3C, 0xFF7981, 0xFF5BC5, 0xFF48F2, 0xDF49FF, 0x476DFF, 0x00B4F7, 0x00E0FF, 0x00E375, 0x03F42B, 0x78B82E, 0xE5E218, 0x787878, 0x000000, 0x000000, 0xFFFFFF, 0xFFF2BE, 0xF8B8B8, 0xF8B8D8, 0xFFB6FF, 0xFFC3FF, 0xC7D1FF, 0x9ADAFF, 0x88EDF8, 0x83FFDD, 0xB8F8B8, 0xF5F8AC, 0xFFFFB0, 0xF8D8F8, 0x000000, 0x000000)
-      makeTables()
-      setEmphasis(0)
-    }
-
-    /** Loads the PAL Palette */
-    def loadPALPalette(): Unit = {
-      curTable = Array(0x525252, 0xB40000, 0xA00000, 0xB1003D, 0x740069, 0x00005B, 0x00005F, 0x001840, 0x002F10, 0x084A08, 0x006700, 0x124200, 0x6D2800, 0x000000, 0x000000, 0x000000, 0xC4D5E7, 0xFF4000, 0xDC0E22, 0xFF476B, 0xD7009F, 0x680AD7, 0x0019BC, 0x0054B1, 0x006A5B, 0x008C03, 0x00AB00, 0x2C8800, 0xA47200, 0x000000, 0x000000, 0x000000, 0xF8F8F8, 0xFFAB3C, 0xFF7981, 0xFF5BC5, 0xFF48F2, 0xDF49FF, 0x476DFF, 0x00B4F7, 0x00E0FF, 0x00E375, 0x03F42B, 0x78B82E, 0xE5E218, 0x787878, 0x000000, 0x000000, 0xFFFFFF, 0xFFF2BE, 0xF8B8B8, 0xF8B8D8, 0xFFB6FF, 0xFFC3FF, 0xC7D1FF, 0x9ADAFF, 0x88EDF8, 0x83FFDD, 0xB8F8B8, 0xF5F8AC, 0xFFFFB0, 0xF8D8F8, 0x000000, 0x000000)
-      makeTables()
-      setEmphasis(0)
-    }
-
-    /** Creates the emphasis table for each existing emphasis (0 to 8), using the given Palette (NTSC, PAL or default) */
-    def makeTables(): Unit = {
-      var r, g, b, col, i : Int = 0
-      var rFactor, gFactor, bFactor : Double = 1.0
-
-      // Calculate a table for each possible emphasis
-      for (emph <- 0 until 8) {
-        // Determine color componenet factors
-        if ((emph & 1) != 0) {
-          rFactor = 0.75
-          bFactor = 0.75
-        }
-        if ((emph & 2) != 0) {
-          rFactor = 0.75
-          gFactor = 0.75
-        }
-        if ((emph & 4) != 0) {
-          gFactor = 0.75
-          bFactor = 0.75
-        }
-
-        // Calculate table
-        for (i <- 0 until 64) {
-          col = curTable(i)
-          r = (getRed(col) * rFactor).toInt
-          g = (getGreen(col) * gFactor).toInt
-          b = (getBlue(col) * bFactor).toInt
-          emphTable(emph)(i) = getRgb(r,g,b)
-        }
-      }
-    }
-
-    /** Sets the current emphasis to given value. */
-    def setEmphasis(emph: Int): Unit = {
-      if (emph != currentEmph) {
-        currentEmph = emph
-        var i : Int = 0
-        for (i <- 0 until 64) curTable(i) = emphTable(emph)(i)
-      }
-    }
-
-    /** Get the given entry form the curTable */
-    def getEntry(yiq: Int): Int = curTable(yiq)
-
-    /** Extract red component from a RGB color */
-    def getRed(rgb: Int): Int = (rgb>>16)&0xFF
-
-    /** Extract green component from a RGB color */
-    def getGreen(rgb: Int): Int = (rgb>>8)&0xFF
-
-    /** Extract blue component from a RGB color */
-    def getBlue(rgb: Int): Int = (rgb&0xFF)
-
-    /** Get the RGB color, given the red, blue and green component */
-    def getRgb(r: Int, g: Int, b: Int): Int = ((r<<16)|(g<<8)|(b))
-
-    /** Loads the default NES Palette (given by wiki) */
-    def loadDefaultPalette(): Unit = {
-      curTable(0) = getRgb(117,117,117)
-      curTable(1) = getRgb(39,27,143)
-      curTable(2) = getRgb(0,0,171)
-      curTable(3) = getRgb(71,0,159)
-      curTable(4) = getRgb(143,0,119)
-      curTable(5) = getRgb(171,0,19)
-      curTable(6) = getRgb(167,0,0)
-      curTable(7) = getRgb(127,11,0)
-      curTable(8) = getRgb(67,47,0)
-      curTable(9) = getRgb(0,71,0)
-      curTable(10) = getRgb(0,81,0)
-      curTable(11) = getRgb(0,63,23)
-      curTable(12) = getRgb(27,63,95)
-      curTable(13) = getRgb(0,0,0)
-      curTable(14) = getRgb(0,0,0)
-      curTable(15) = getRgb(0,0,0)
-      curTable(16) = getRgb(188,188,188)
-      curTable(17) = getRgb(0,115,239)
-      curTable(18) = getRgb(35,59,239)
-      curTable(19) = getRgb(131,0,243)
-      curTable(20) = getRgb(191,0,191)
-      curTable(21) = getRgb(231,0,91)
-      curTable(22) = getRgb(219,43,0)
-      curTable(23) = getRgb(203,79,15)
-      curTable(24) = getRgb(139,115,0)
-      curTable(25) = getRgb(0,151,0)
-      curTable(26) = getRgb(0,171,0)
-      curTable(27) = getRgb(0,147, 59)
-      curTable(28) = getRgb(0,131,139)
-      curTable(29) = getRgb(0,0,0)
-      curTable(30) = getRgb(0,0,0)
-      curTable(31) = getRgb(0,0,0)
-      curTable(32) = getRgb(255,255,255)
-      curTable(33) = getRgb(63,191,255)
-      curTable(34) = getRgb(95,151,255)
-      curTable(35) = getRgb(167,139,253)
-      curTable(36) = getRgb(247,123,255)
-      curTable(37) = getRgb(255,119,183)
-      curTable(38) = getRgb(255,119,99)
-      curTable(39) = getRgb(255,155,59)
-      curTable(40) = getRgb(243,191,63)
-      curTable(41) = getRgb(131,211,19)
-      curTable(42) = getRgb(79,223,75)
-      curTable(43) = getRgb(88,248,152)
-      curTable(44) = getRgb(0,235,219)
-      curTable(45) = getRgb(0,0,0)
-      curTable(46) = getRgb(0,0,0)
-      curTable(47) = getRgb(0,0,0)
-      curTable(48) = getRgb(255,255,255)
-      curTable(49) = getRgb(171,231,255)
-      curTable(50) = getRgb(199,215,255)
-      curTable(51) = getRgb(215,203,255)
-      curTable(52) = getRgb(255,199,255)
-      curTable(53) = getRgb(255,199,219)
-      curTable(54) = getRgb(255,191,179)
-      curTable(55) = getRgb(255,219,171)
-      curTable(56) = getRgb(255,231,163)
-      curTable(57) = getRgb(227,255,163)
-      curTable(58) = getRgb(171,243,191)
-      curTable(59) = getRgb(179,255,207)
-      curTable(60) = getRgb(159,255,243)
-      curTable(61) = getRgb(0,0,0)
-      curTable(62) = getRgb(0,0,0)
-      curTable(63) = getRgb(0,0,0)
-
-      makeTables()
-      setEmphasis(0)
-    }
-
-  }
-
   var vramMem : Array[Int] = null
   var spriteMem : Array[Int] = null
   var vramAddress : Int = _
@@ -1329,6 +1116,344 @@ class PPU(nes: NES) {
 
 object PPU {
 
+  /** The NameTable will contain two arrays:
+    * - Tile:
+    * 			Each byte in this array controls one 8x8 pixel character cell, and each nametable has 30 rows of 32 tiles each.
+    *
+    * - Attribute (Attrib):
+    *			The attribute table is a 64-byte array at the end of each nametable that controls which palette is assigned to each part of the background.
+    *
+    * A NES will contain 4 NameTables, arranged in a 2x2 pattern.
+    */
+  class NameTable(w: Int, h: Int, n: String) {
+    val width : Int = w
+    val height : Int = h
+    val name : String = n
+
+    // Initially filled with 0's.
+    var tile : Array[Int] = Array.fill(width*height)(0)
+    /** Controls which palette is assigned to each part of the background.  */
+    var attrib : Array[Int] = Array.fill(width*height)(0)
+
+    /** Returns the searched tile. */
+    def getTileIndex(x: Int, y: Int): Int = tile(y*width+x)
+
+    /** Returns the searched attribute. */
+    def getAttrib(x: Int, y: Int): Int = attrib(y*width+x)
+
+    /** Writes given value in given index in the attributes table.
+      * Note that the for loop (and bit operations) is necessary to select only what we want to change, as each byte in the attribute table controls a palette of a 32x32 pixel.
+      */
+    def writeAttrib(index: Int, value: Int): Unit = {
+      val basex: Int = (index % 8) * 4
+      val basey : Int = (index / 8) * 4
+      var add : Int = 0
+      var tx, ty : Int = 0
+      var attindex : Int = 0
+
+      //var sqy, sqx : Int = 0
+      for (sqy <- 0 until 2; sqx <- 0 until 2) {
+        add = (value>>(2*(sqy*2+sqx)))&3 // Bit operators
+        for (y <- 0 until 2; x <- 0 until 2) {
+          tx = basex+sqx*2+x
+          ty = basey+sqy*2+y
+          attindex = ty*width+tx
+          attrib(ty*width+tx) = (add<<2)&12
+        }
+      }
+    }
+
+    // TODO if necessary : To and from JSON
+  }
+
+  /** The PaletteTable will contain two arrays and one global variable:
+    * - curTable:
+    *     Contains the used color palette. Can be either the default NES, NTSC or PAL.
+    *
+    * - Emphasis Table (emphTable):
+    *	    Will contain the corresponding emphasised color for each color of the palette.
+    *
+    * - Emphasis (currentEmph and emph):
+    *      The color emphasis will be used to change the luminance amd chrominance phasor of each color, by using the RGB components.
+    *
+    * Each NES has only one color Palette.
+    */
+  class PaletteTable {
+    var curTable : Array[Int] = new Array[Int](64)
+    var emphTable : Array[Array[Int]] = Array.ofDim[Int](8, 64)
+    var currentEmph : Int = -1
+
+    /** Resets the Palette */
+    def reset(): Unit = setEmphasis(0)
+
+    /** Loads the NTSC Palette */
+    def loadNTSCPalette(): Unit = {
+      curTable = Array(0x525252,
+          0xB40000,
+          0xA00000,
+          0xB1003D,
+          0x740069,
+          0x00005B,
+          0x00005F,
+          0x001840,
+          0x002F10,
+          0x084A08,
+          0x006700,
+          0x124200,
+          0x6D2800,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xC4D5E7,
+          0xFF4000,
+          0xDC0E22,
+          0xFF476B,
+          0xD7009F,
+          0x680AD7,
+          0x0019BC,
+          0x0054B1,
+          0x006A5B,
+          0x008C03,
+          0x00AB00,
+          0x2C8800,
+          0xA47200,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xF8F8F8,
+          0xFFAB3C,
+          0xFF7981,
+          0xFF5BC5,
+          0xFF48F2,
+          0xDF49FF,
+          0x476DFF,
+          0x00B4F7,
+          0x00E0FF,
+          0x00E375,
+          0x03F42B,
+          0x78B82E,
+          0xE5E218,
+          0x787878,
+          0x000000,
+          0x000000,
+          0xFFFFFF,
+          0xFFF2BE,
+          0xF8B8B8,
+          0xF8B8D8,
+          0xFFB6FF,
+          0xFFC3FF,
+          0xC7D1FF,
+          0x9ADAFF,
+          0x88EDF8,
+          0x83FFDD,
+          0xB8F8B8,
+          0xF5F8AC,
+          0xFFFFB0,
+          0xF8D8F8,
+          0x000000,
+          0x000000)
+      makeTables()
+      setEmphasis(0)
+    }
+
+    /** Loads the PAL Palette */
+    def loadPALPalette(): Unit = {
+      curTable = Array(0x525252,
+          0xB40000,
+          0xA00000,
+          0xB1003D,
+          0x740069,
+          0x00005B,
+          0x00005F,
+          0x001840,
+          0x002F10,
+          0x084A08,
+          0x006700,
+          0x124200,
+          0x6D2800,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xC4D5E7,
+          0xFF4000,
+          0xDC0E22,
+          0xFF476B,
+          0xD7009F,
+          0x680AD7,
+          0x0019BC,
+          0x0054B1,
+          0x006A5B,
+          0x008C03,
+          0x00AB00,
+          0x2C8800,
+          0xA47200,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xF8F8F8,
+          0xFFAB3C,
+          0xFF7981,
+          0xFF5BC5,
+          0xFF48F2,
+          0xDF49FF,
+          0x476DFF,
+          0x00B4F7,
+          0x00E0FF,
+          0x00E375,
+          0x03F42B,
+          0x78B82E,
+          0xE5E218,
+          0x787878,
+          0x000000,
+          0x000000,
+          0xFFFFFF,
+          0xFFF2BE,
+          0xF8B8B8,
+          0xF8B8D8,
+          0xFFB6FF,
+          0xFFC3FF,
+          0xC7D1FF,
+          0x9ADAFF,
+          0x88EDF8,
+          0x83FFDD,
+          0xB8F8B8,
+          0xF5F8AC,
+          0xFFFFB0,
+          0xF8D8F8,
+          0x000000,
+          0x000000)
+      makeTables()
+      setEmphasis(0)
+    }
+
+    /** Creates the emphasis table for each existing emphasis (0 to 8), using the given Palette (NTSC, PAL or default) */
+    def makeTables(): Unit = {
+      var r, g, b, col, i : Int = 0
+      var rFactor, gFactor, bFactor : Double = 1.0
+
+      // Calculate a table for each possible emphasis
+      for (emph <- 0 until 8) {
+        // Determine color componenet factors
+        if ((emph & 1) != 0) {
+          rFactor = 0.75
+          bFactor = 0.75
+        }
+        if ((emph & 2) != 0) {
+          rFactor = 0.75
+          gFactor = 0.75
+        }
+        if ((emph & 4) != 0) {
+          gFactor = 0.75
+          bFactor = 0.75
+        }
+
+        // Calculate table
+        for (i <- 0 until 64) {
+          col = curTable(i)
+          r = (getRed(col) * rFactor).toInt
+          g = (getGreen(col) * gFactor).toInt
+          b = (getBlue(col) * bFactor).toInt
+          emphTable(emph)(i) = getRgb(r,g,b)
+        }
+      }
+    }
+
+    /** Sets the current emphasis to given value. */
+    def setEmphasis(emph: Int): Unit = {
+      if (emph != currentEmph) {
+        currentEmph = emph
+        var i : Int = 0
+        for (i <- 0 until 64) curTable(i) = emphTable(emph)(i)
+      }
+    }
+
+    /** Get the given entry form the curTable */
+    def getEntry(yiq: Int): Int = curTable(yiq)
+
+    /** Extract red component from a RGB color */
+    def getRed(rgb: Int): Int = (rgb>>16)&0xFF
+
+    /** Extract green component from a RGB color */
+    def getGreen(rgb: Int): Int = (rgb>>8)&0xFF
+
+    /** Extract blue component from a RGB color */
+    def getBlue(rgb: Int): Int = (rgb&0xFF)
+
+    /** Get the RGB color, given the red, blue and green component */
+    def getRgb(r: Int, g: Int, b: Int): Int = ((r<<16)|(g<<8)|(b))
+
+    /** Loads the default NES Palette (given by wiki) */
+    def loadDefaultPalette(): Unit = {
+      curTable = Array(getRgb(117,117,117),
+          getRgb(39,27,143),
+          getRgb(0,0,171),
+          getRgb(71,0,159),
+          getRgb(143,0,119),
+          getRgb(171,0,19),
+          getRgb(167,0,0),
+          getRgb(127,11,0),
+          getRgb(67,47,0),
+          getRgb(0,71,0),
+          getRgb(0,81,0),
+          getRgb(0,63,23),
+          getRgb(27,63,95),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(188,188,188),
+          getRgb(0,115,239),
+          getRgb(35,59,239),
+          getRgb(131,0,243),
+          getRgb(191,0,191),
+          getRgb(231,0,91),
+          getRgb(219,43,0),
+          getRgb(203,79,15),
+          getRgb(139,115,0),
+          getRgb(0,151,0),
+          getRgb(0,171,0),
+          getRgb(0,147, 59),
+          getRgb(0,131,139),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(255,255,255),
+          getRgb(63,191,255),
+          getRgb(95,151,255),
+          getRgb(167,139,253),
+          getRgb(247,123,255),
+          getRgb(255,119,183),
+          getRgb(255,119,99),
+          getRgb(255,155,59),
+          getRgb(243,191,63),
+          getRgb(131,211,19),
+          getRgb(79,223,75),
+          getRgb(88,248,152),
+          getRgb(0,235,219),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(255,255,255),
+          getRgb(171,231,255),
+          getRgb(199,215,255),
+          getRgb(215,203,255),
+          getRgb(255,199,219),
+          getRgb(255,191,179),
+          getRgb(255,219,171),
+          getRgb(255,231,163),
+          getRgb(227,255,163),
+          getRgb(171,243,191),
+          getRgb(179,255,207),
+          getRgb(159,255,243),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0))
+
+      makeTables()
+      setEmphasis(0)
+    }
+
+  }
+
   /** The Tile contains:
     * - pix and opaque:
     *     Array containing all the tile data and array containing the boolean value if a Tile is opaque or not
@@ -1424,7 +1549,6 @@ object PPU {
         tIndex = 0
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
@@ -1437,7 +1561,6 @@ object PPU {
         tIndex = 7
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1
@@ -1452,7 +1575,6 @@ object PPU {
 
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
@@ -1467,7 +1589,6 @@ object PPU {
 
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1
