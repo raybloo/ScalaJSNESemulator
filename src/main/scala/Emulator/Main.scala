@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 /** TODO : Class explanation
-  * 
+  *
   */
 object Main extends JSApp {
   val nes = new NES()

@@ -8,219 +8,6 @@ import scala.scalajs.js.Dynamic
 class PPU(nes: NES) {
   import PPU._
 
-  /** The NameTable will contain two arrays:
-    * - Tile:
-    * 			Each byte in this array controls one 8x8 pixel character cell, and each nametable has 30 rows of 32 tiles each.
-    *
-    * - Attribute (Attrib):
-    *			The attribute table is a 64-byte array at the end of each nametable that controls which palette is assigned to each part of the background. 
-    *
-    * A NES will contain 4 NameTables, arranged in a 2x2 pattern.
-    */
-  class NameTable(w: Int, h: Int, n: String) {
-    val width : Int = w
-    val height : Int = h
-    val name : String = n
-	
-    // Initially filled with 0's.
-    var tile : Array[Int] = Array.fill(width*height)(0)
-    /** Controls which palette is assigned to each part of the background.  */
-    var attrib : Array[Int] = Array.fill(width*height)(0)
-	
-    /** Returns the searched tile. */
-    def getTileIndex(x: Int, y: Int): Int = tile(y*width+x)
-	
-    /** Returns the searched attribute. */
-    def getAttrib(x: Int, y: Int): Int = attrib(y*width+x)
-	
-    /** Writes given value in given index in the attributes table.
-      * Note that the for loop (and bit operations) is necessary to select only what we want to change, as each byte in the attribute table controls a palette of a 32x32 pixel.
-      */
-    def writeAttrib(index: Int, value: Int): Unit = {
-      val basex: Int = (index % 8) * 4
-      val basey : Int = (index / 8) * 4
-      var add : Int = 0
-      var tx, ty : Int = 0
-      var attindex : Int = 0
-		
-      //var sqy, sqx : Int = 0
-      for (sqy <- 0 until 2; sqx <- 0 until 2) {
-        add = (value>>(2*(sqy*2+sqx)))&3 // Bit operators
-        for (y <- 0 until 2; x <- 0 until 2) {
-          tx = basex+sqx*2+x
-          ty = basey+sqy*2+y
-          attindex = ty*width+tx
-          attrib(ty*width+tx) = (add<<2)&12
-        }
-      }
-    }
-	
-    // TODO if necessary : To and from JSON
-  }
-  
-  /** The PaletteTable will contain two arrays and one global variable:
-    * - curTable:
-    *     Contains the used color palette. Can be either the default NES, NTSC or PAL.
-    *
-    * - Emphasis Table (emphTable):
-    *	    Will contain the corresponding color emphasis for each color of the palette.
-    *
-    * - Emphasis (currentEmph and emph):
-    *      The color emphasis will be used to change the luminance amd chrominance phasor of each color, by using the RGB components.
-    * 
-    * Each NES has only one color Palette.
-    */
-  class PaletteTable {
-    var curTable : Array[Int] = new Array[Int](64)
-    var emphTable : Array[Array[Int]] = Array.ofDim[Int](8, 64)
-    var currentEmph : Int = -1
-	
-    /** Resets the Palette */
-    def reset(): Unit = setEmphasis(0)
-	
-    /** Loads the NTSC Palette */
-    def loadNTSCPalette(): Unit = {
-      curTable = Array(0x525252, 0xB40000, 0xA00000, 0xB1003D, 0x740069, 0x00005B, 0x00005F, 0x001840, 0x002F10, 0x084A08, 0x006700, 0x124200, 0x6D2800, 0x000000, 0x000000, 0x000000, 0xC4D5E7, 0xFF4000, 0xDC0E22, 0xFF476B, 0xD7009F, 0x680AD7, 0x0019BC, 0x0054B1, 0x006A5B, 0x008C03, 0x00AB00, 0x2C8800, 0xA47200, 0x000000, 0x000000, 0x000000, 0xF8F8F8, 0xFFAB3C, 0xFF7981, 0xFF5BC5, 0xFF48F2, 0xDF49FF, 0x476DFF, 0x00B4F7, 0x00E0FF, 0x00E375, 0x03F42B, 0x78B82E, 0xE5E218, 0x787878, 0x000000, 0x000000, 0xFFFFFF, 0xFFF2BE, 0xF8B8B8, 0xF8B8D8, 0xFFB6FF, 0xFFC3FF, 0xC7D1FF, 0x9ADAFF, 0x88EDF8, 0x83FFDD, 0xB8F8B8, 0xF5F8AC, 0xFFFFB0, 0xF8D8F8, 0x000000, 0x000000)
-      makeTables()
-      setEmphasis(0)
-    }
-	
-    /** Loads the PAL Palette */
-    def loadPALPalette(): Unit = {
-      curTable = Array(0x525252, 0xB40000, 0xA00000, 0xB1003D, 0x740069, 0x00005B, 0x00005F, 0x001840, 0x002F10, 0x084A08, 0x006700, 0x124200, 0x6D2800, 0x000000, 0x000000, 0x000000, 0xC4D5E7, 0xFF4000, 0xDC0E22, 0xFF476B, 0xD7009F, 0x680AD7, 0x0019BC, 0x0054B1, 0x006A5B, 0x008C03, 0x00AB00, 0x2C8800, 0xA47200, 0x000000, 0x000000, 0x000000, 0xF8F8F8, 0xFFAB3C, 0xFF7981, 0xFF5BC5, 0xFF48F2, 0xDF49FF, 0x476DFF, 0x00B4F7, 0x00E0FF, 0x00E375, 0x03F42B, 0x78B82E, 0xE5E218, 0x787878, 0x000000, 0x000000, 0xFFFFFF, 0xFFF2BE, 0xF8B8B8, 0xF8B8D8, 0xFFB6FF, 0xFFC3FF, 0xC7D1FF, 0x9ADAFF, 0x88EDF8, 0x83FFDD, 0xB8F8B8, 0xF5F8AC, 0xFFFFB0, 0xF8D8F8, 0x000000, 0x000000)
-      makeTables()
-      setEmphasis(0)
-    }
-	
-    /** Creates the emphasis table for each existing emphasis (0 to 8), using the given Palette (NTSC, PAL or default) */
-    def makeTables(): Unit = {
-      var r, g, b, col, i : Int = 0
-      var rFactor, gFactor, bFactor : Double = 1.0
-      
-      // Calculate a table for each possible emphasis
-      for (emph <- 0 until 8) {
-        // Determine color componenet factors
-        if ((emph & 1) != 0) {
-          rFactor = 0.75
-          bFactor = 0.75
-        }
-        if ((emph & 2) != 0) {
-          rFactor = 0.75
-          gFactor = 0.75
-        }
-        if ((emph & 4) != 0) {
-          gFactor = 0.75
-          bFactor = 0.75
-        }
-        
-        // Calculate table
-        for (i <- 0 until 64) {
-          col = curTable(i)
-          r = (getRed(col) * rFactor).toInt
-          g = (getGreen(col) * gFactor).toInt
-          b = (getBlue(col) * bFactor).toInt
-          emphTable(emph)(i) = getRgb(r,g,b)
-        }
-      }
-    }
-	
-    /** Sets the current emphasis to given value. */
-    def setEmphasis(emph: Int): Unit = {
-      if (emph != currentEmph) {
-        currentEmph = emph
-        var i : Int = 0
-        for (i <- 0 until 64) curTable(i) = emphTable(emph)(i)
-      }
-    }
-	
-    /** Get the given entry form the curTable */
-    def getEntry(yiq: Int): Int = curTable(yiq)
-	
-    /** Extract red component from a RGB color */
-    def getRed(rgb: Int): Int = (rgb>>16)&0xFF
-	
-    /** Extract green component from a RGB color */
-    def getGreen(rgb: Int): Int = (rgb>>8)&0xFF
-	
-    /** Extract blue component from a RGB color */
-    def getBlue(rgb: Int): Int = (rgb&0xFF)
-	
-    /** Get the RGB color, given the red, blue and green component */
-    def getRgb(r: Int, g: Int, b: Int): Int = ((r<<16)|(g<<8)|(b))
-	
-    /** Loads the default NES Palette (given by wiki) */
-    def loadDefaultPalette(): Unit = {
-      curTable(0) = getRgb(117,117,117)
-      curTable(1) = getRgb(39,27,143)
-      curTable(2) = getRgb(0,0,171)
-      curTable(3) = getRgb(71,0,159)
-      curTable(4) = getRgb(143,0,119)
-      curTable(5) = getRgb(171,0,19)
-      curTable(6) = getRgb(167,0,0)
-      curTable(7) = getRgb(127,11,0)
-      curTable(8) = getRgb(67,47,0)
-      curTable(9) = getRgb(0,71,0)
-      curTable(10) = getRgb(0,81,0)
-      curTable(11) = getRgb(0,63,23)
-      curTable(12) = getRgb(27,63,95)
-      curTable(13) = getRgb(0,0,0)
-      curTable(14) = getRgb(0,0,0)
-      curTable(15) = getRgb(0,0,0)
-      curTable(16) = getRgb(188,188,188)
-      curTable(17) = getRgb(0,115,239)
-      curTable(18) = getRgb(35,59,239)
-      curTable(19) = getRgb(131,0,243)
-      curTable(20) = getRgb(191,0,191)
-      curTable(21) = getRgb(231,0,91)
-      curTable(22) = getRgb(219,43,0)
-      curTable(23) = getRgb(203,79,15)
-      curTable(24) = getRgb(139,115,0)
-      curTable(25) = getRgb(0,151,0)
-      curTable(26) = getRgb(0,171,0)
-      curTable(27) = getRgb(0,147, 59)
-      curTable(28) = getRgb(0,131,139)
-      curTable(29) = getRgb(0,0,0)
-      curTable(30) = getRgb(0,0,0)
-      curTable(31) = getRgb(0,0,0)
-      curTable(32) = getRgb(255,255,255)
-      curTable(33) = getRgb(63,191,255)
-      curTable(34) = getRgb(95,151,255)
-      curTable(35) = getRgb(167,139,253)
-      curTable(36) = getRgb(247,123,255)
-      curTable(37) = getRgb(255,119,183)
-      curTable(38) = getRgb(255,119,99)
-      curTable(39) = getRgb(255,155,59)
-      curTable(40) = getRgb(243,191,63)
-      curTable(41) = getRgb(131,211,19)
-      curTable(42) = getRgb(79,223,75)
-      curTable(43) = getRgb(88,248,152)
-      curTable(44) = getRgb(0,235,219)
-      curTable(45) = getRgb(0,0,0)
-      curTable(46) = getRgb(0,0,0)
-      curTable(47) = getRgb(0,0,0)
-      curTable(48) = getRgb(255,255,255)
-      curTable(49) = getRgb(171,231,255)
-      curTable(50) = getRgb(199,215,255)
-      curTable(51) = getRgb(215,203,255)
-      curTable(52) = getRgb(255,199,255)
-      curTable(53) = getRgb(255,199,219)
-      curTable(54) = getRgb(255,191,179)
-      curTable(55) = getRgb(255,219,171)
-      curTable(56) = getRgb(255,231,163)
-      curTable(57) = getRgb(227,255,163)
-      curTable(58) = getRgb(171,243,191)
-      curTable(59) = getRgb(179,255,207)
-      curTable(60) = getRgb(159,255,243)
-      curTable(61) = getRgb(0,0,0)
-      curTable(62) = getRgb(0,0,0)
-      curTable(63) = getRgb(0,0,0)
-        
-      makeTables()
-      setEmphasis(0)
-    }
-	
-  }
-
   var vramMem : Array[Int] = null
   var spriteMem : Array[Int] = null
   var vramAddress : Int = _
@@ -297,7 +84,7 @@ class PPU(nes: NES) {
   val StatusSLSpriteCount: Byte =  5
   val StatusSprite0Hit: Byte =  6
   val StatusVBlank: Byte =  7
-  
+
   /** Initializing/reseting all variables at reset. */
   def reset(): Unit = {
     // Memory
@@ -312,7 +99,7 @@ class PPU(nes: NES) {
 
     // SPR-RAM I/O:
     sramAddress = 0 // 8-bit only.
-        
+
     currentMirroring = -1
     requestEndFrame = false
     nmiOk = false
@@ -320,7 +107,7 @@ class PPU(nes: NES) {
     validTileData = false
     nmiCounter = 0
     scanlineAlreadyRendered = false
-        
+
     // Control Flags Register 1:
     f_nmiOnVblank = 0         // NMI on VBlank. 0=disable, 1=enable
     f_spriteSize = 0          // Sprite size. 0=8x8, 1=8x16
@@ -328,7 +115,7 @@ class PPU(nes: NES) {
     f_spPatternTable = 0      // Sprite Pattern Table address. 0=0x0000,1=0x1000
     f_addrInc = 0             // PPU Address Increment. 0=1,1=32
     f_nTblAddress = 0         // Name Table Address. 0=0x2000,1=0x2400,2=0x2800,3=0x2C00
-        
+
     // Control Flags Register 2:
     f_color = 0          // Background color. 0=black, 1=blue, 2=green, 4=red
     f_spVisibility = 0   // Sprite visibility. 0=not displayed,1=displayed
@@ -336,14 +123,14 @@ class PPU(nes: NES) {
     f_spClipping = 0     // Sprite clipping. 0=Sprites invisible in left 8-pixel column,1=No clipping
     f_bgClipping = 0     // Background clipping. 0=BG invisible in left 8-pixel column, 1=No clipping
     f_dispType = 0       // Display type. 0=color, 1=monochrome
-        
+
     // Counters:
     cntFV = 0
     cntV = 0
     cntH = 0
     cntVT = 0
     cntHT = 0
-        
+
     // Registers:
     regFV = 0
     regV = 0
@@ -352,11 +139,11 @@ class PPU(nes: NES) {
     regHT = 0
     regFH = 0
     regS = 0
-        
+
     // These are temporary variables used in rendering and sound procedures.
     // Their states outside of those procedures can be ignored.
     curNt = -1
-        
+
     // Variables used when rendering:
     attrib = new Array(32)
     buffer = new Array(256*240)
@@ -367,12 +154,12 @@ class PPU(nes: NES) {
     validTileData = false
 
     scantile = new Array(32)
-        
+
     // Initialize misc vars:
     scanline = 0
     lastRenderedScanline = -1
     curX = 0
-        
+
     // Sprite data:
     sprX = new Array(64)        // X coordinate
     sprY = new Array(64)        // Y coordinate
@@ -384,61 +171,61 @@ class PPU(nes: NES) {
     spr0HitX = 0                // Sprite #0 hit X coordinate
     spr0HitY = 0                // Sprite #0 hit Y coordinate
     hitSpr0 = false
-        
+
     // Palette data:
     sprPalette = new Array(16)
     imgPalette = new Array(16)
-        
+
     // Create pattern table tile buffers:
     ptTile = new Array(512)
     for (i <- 0 until 512) ptTile(i) = new Tile()
-        
+
     // Create nametable buffers:
     // Name table data:
     ntable1 = new Array(4)
     nameTable = new Array(4)
-    
+
     for (i <- 0 until 4) nameTable(i) = new NameTable(32, 32, "Nt"+i)
-        
+
     // Initialize mirroring lookup table:
     vramMirrorTable = new Array(0x8000)
     for (i <- 1 until 0x8000) vramMirrorTable(i) = i
-        
+
     palTable = new PaletteTable()
     palTable.loadNTSCPalette()
-        
+
     updateControlReg1(0)
     updateControlReg2(0)
   }
-  
+
   /** Sets Nametable mirroring with the given mirroring value. */
   def setMirroring(mirroring: Int): Unit = {
     if (mirroring == currentMirroring) return
-    
+
     currentMirroring = mirroring
     triggerRendering()
-    
+
     // Remove mirroring:
     if (vramMirrorTable == null) vramMirrorTable = new Array(0x8000)
     for (i <- 0 until 0x8000) vramMirrorTable(i) = i
-    
+
     // Palette mirroring:
     defineMirrorRegion(0x3f20,0x3f00,0x20)
     defineMirrorRegion(0x3f40,0x3f00,0x20)
     defineMirrorRegion(0x3f80,0x3f00,0x20)
     defineMirrorRegion(0x3fc0,0x3f00,0x20)
-        
+
     // Additional mirroring:
     defineMirrorRegion(0x3000,0x2000,0xf00)
     defineMirrorRegion(0x4000,0x0000,0x4000)
-    
+
     if (mirroring == nes.rom.HorizontalMirroring) {
       // Horizontal mirroring.
       ntable1(0) = 0
       ntable1(1) = 0
       ntable1(2) = 1
       ntable1(3) = 1
-            
+
       defineMirrorRegion(0x2400,0x2000,0x400)
       defineMirrorRegion(0x2c00,0x2800,0x400)
     } else if (mirroring == nes.rom.VerticalMirroring) {
@@ -447,7 +234,7 @@ class PPU(nes: NES) {
       ntable1(1) = 1
       ntable1(2) = 0
       ntable1(3) = 1
-            
+
       defineMirrorRegion(0x2800,0x2000,0x400)
       defineMirrorRegion(0x2c00,0x2400,0x400)
     } else if (mirroring == nes.rom.SinglescreenMirroring) {
@@ -456,7 +243,7 @@ class PPU(nes: NES) {
       ntable1(1) = 0
       ntable1(2) = 0
       ntable1(3) = 0
-            
+
       defineMirrorRegion(0x2400,0x2000,0x400)
       defineMirrorRegion(0x2800,0x2000,0x400)
       defineMirrorRegion(0x2c00,0x2000,0x400)
@@ -465,10 +252,10 @@ class PPU(nes: NES) {
       ntable1(1) = 1
       ntable1(2) = 1
       ntable1(3) = 1
-            
+
       defineMirrorRegion(0x2400,0x2400,0x400)
       defineMirrorRegion(0x2800,0x2400,0x400)
-      defineMirrorRegion(0x2c00,0x2400,0x400) 
+      defineMirrorRegion(0x2c00,0x2400,0x400)
     } else {
       // Assume Four-screen mirroring.
       ntable1(0) = 0
@@ -477,7 +264,7 @@ class PPU(nes: NES) {
       ntable1(3) = 3
     }
   }
-  
+
   /**
     * Definea a mirrored area in the address lookup table, while assuming the regions don't overlap.
     * fromStart :
@@ -494,13 +281,13 @@ class PPU(nes: NES) {
   def startVBlank(): Unit = {
     // Do non-maskable interrupt:
     nes.cpu.requestIrq(1)
-        
+
     // Make sure everything is rendered:
     if (lastRenderedScanline < 239) renderFramePartially(lastRenderedScanline+1, 240-lastRenderedScanline)
-        
+
     // End frame:
     endFrame()
-        
+
     // Reset scanline counter:
     lastRenderedScanline = -1
   }
@@ -519,7 +306,7 @@ class PPU(nes: NES) {
       case 20 =>
         // Clear VBlank flag:
         setStatusFlag(StatusVBlank,false)
-        
+
         // Clear Sprite #0 hit flag:
         setStatusFlag(StatusSprite0Hit,false)
         hitSpr0 = false
@@ -544,19 +331,19 @@ class PPU(nes: NES) {
 
         // Clock mapper IRQ Counter:
         if (f_bgVisibility == 1 || f_spVisibility == 1) nes.mmap.clockIrqCounter
- 
+
       case 261 => // Dead scanline, no rendering.
         // Set VINT:
         setStatusFlag(StatusVBlank, true)
         requestEndFrame = true
         nmiCounter = 9
-        
+
         // Wrap around:
         scanline = -1 // will be incremented to 0
 
       case default =>
         if (scanline >= 21 && scanline <= 260) {
-        
+
           // Render normally:
           if (f_bgVisibility == 1) {
             if (!scanlineAlreadyRendered) {
@@ -565,9 +352,9 @@ class PPU(nes: NES) {
               cntH = regH
               renderBgScanline(true, scanline+1-21)
             }
-            
+
             scanlineAlreadyRendered = false
-            
+
             // Check for sprite 0 (next scanline):
             if (!hitSpr0 && f_spVisibility == 1) {
               if (sprX(0) >= -7 && sprX(0) < 256 && (sprY(0) + 1) <= (scanline - 20) && (sprY(0) + 1 + (if (f_spriteSize == 0) 8 else 16)) >= (scanline - 20)) {
@@ -582,7 +369,7 @@ class PPU(nes: NES) {
           if (f_bgVisibility == 1 || f_spVisibility == 1) nes.mmap.clockIrqCounter
         }
     }
-    
+
     scanline += 1
     regsToAddress()
     cntsToAddress()
@@ -592,8 +379,8 @@ class PPU(nes: NES) {
   def startFrame(): Unit = {
     // Set background color:
     var bgColor : Int = 0
-    
-    // Color display. f_color determines color emphasis. Use first entry of image palette as BG color. 
+
+    // Color display. f_color determines color emphasis. Use first entry of image palette as BG color.
     if (f_dispType == 0) {
         bgColor = imgPalette(0)
     } else { // Monochrome display.f_color determines the bg color.
@@ -621,7 +408,7 @@ class PPU(nes: NES) {
     for (i <- 0 until 256*240) buffer(i) = bgColor
     for (i <- 0 until pixrendered.length) pixrendered(i) = 65
   }
-  
+
   /** Finalize the frame by putting sprites, than show it on UI. */
   def endFrame(): Unit = {
     // Draw spr#0 hit coordinates:
@@ -639,16 +426,16 @@ class PPU(nes: NES) {
         for (i <- 0 until 240) buffer((i<<8)+spr0HitX) = 0x55FF55
       }
     }
-    
+
     // if either the sprites or the background should be clipped, both are clipped after rendering is finished.
     if (clipToTvSize || f_bgClipping == 0 || f_spClipping == 0) {
       // Clip left 8-pixels column:
       for (y <- 0 until 240; x <- 0 until 8) buffer((y<<8)+x) = 0
     }
-    
+
     // Clip right 8-pixels column too:
     if (clipToTvSize) for (y <- 0 until 240; x <- 0 until 8) buffer((y<<8)+255-x) = 0
-        
+
     // Clip top and bottom 8 pixels:
     if (clipToTvSize) {
       for (y <- 0 until 8; x <- 0 until 256) {
@@ -656,39 +443,39 @@ class PPU(nes: NES) {
         buffer(((239-y)<<8)+x) = 0
       }
     }
-    
+
     if (nes.showDisplay) {
       nes.ui.writeFrame(buffer, prevBuffer)
     }
   }
-  
+
   /** Render, then update wanted values */
   def updateControlReg1(value: Int): Unit = {
     triggerRendering()
-    
+
     f_nmiOnVblank = (value>>7)&1
     f_spriteSize = (value>>5)&1
     f_bgPatternTable =(value>>4)&1
     f_spPatternTable =(value>>3)&1
     f_addrInc = (value>>2)&1
     f_nTblAddress = value&3
-        
+
     regV = (value>>1)&1
     regH = value&1
     regS = (value>>4)&1
   }
-  
+
   /** Render, then update wanted values */
   def updateControlReg2(value: Int): Unit = {
     triggerRendering()
-    
+
     f_color = (value>>5)&7
     f_spVisibility = (value>>4)&1
     f_bgVisibility = (value>>3)&1
     f_spClipping = (value>>2)&1
     f_bgClipping = (value>>1)&1
     f_dispType = value&1
-    
+
     if (f_dispType == 0) palTable.setEmphasis(f_color)
     updatePalettes()
   }
@@ -697,7 +484,7 @@ class PPU(nes: NES) {
     var n = 1<<flag
     nes.cpu.memory(0x2002) = ((nes.cpu.unsign(nes.cpu.memory(0x2002)) & (255-n)) | (if (value) n else 0)).toByte
   }
-  
+
   /** CPU Register $2002: Read the Status Register. */
   def readStatusRegister(): Byte = {
     var tmp : Byte = nes.cpu.memory(0x2002)
@@ -711,13 +498,13 @@ class PPU(nes: NES) {
     // Fetch status data:
     return tmp
   }
-  
+
   /** CPU Register $2003: Write the SPR-RAM address that is used for sramWrite (Register 0x2004 in CPU memory map) */
   def writeSRAMAddress(address: Int): Unit = sramAddress = address
 
   /** CPU Register $2004 (R): Read from SPR-RAM (Sprite RAM). The address should be set first. */
   def sramLoad(): Int = spriteMem(sramAddress)
-  
+
   /** CPU Register $2004 (R): Write to SPR-RAM (Sprite RAM). The address should be set first. */
   def sramWrite(value: Int): Unit = {
     spriteMem(sramAddress) = value
@@ -725,11 +512,11 @@ class PPU(nes: NES) {
     sramAddress += 1 // Increment address
     sramAddress %= 0x100
   }
-  
+
   /** CPU Register $2005: Write to scroll registers. The first write is the vertical offset, the second is the horizontal offset. */
   def scrollWrite(value: Int): Unit = {
     triggerRendering()
-    
+
     if (firstWrite) {
       // First write, horizontal scroll:
       regHT = (value>>3)&31
@@ -739,10 +526,10 @@ class PPU(nes: NES) {
       regFV = value&7
       regVT = (value>>3)&31
     }
-    
+
     firstWrite = !firstWrite
   }
-  
+
   /** CPU Register $2006: Sets the address used when reading/writing from/to VRAM. The first write sets the high byte, the second the low byte. */
   def writeVRAMAddress(address: Int): Unit = {
     if (firstWrite) {
@@ -752,16 +539,16 @@ class PPU(nes: NES) {
       regVT = (regVT&7) | ((address&3)<<3)
     } else {
       triggerRendering()
-      
+
       regVT = (regVT&24) | ((address>>5)&7)
       regHT = address&31
-            
+
       cntFV = regFV
       cntV = regV
       cntH = regH
       cntVT = regVT
       cntHT = regHT
-            
+
       checkSprite0(scanline-20)
     }
 
@@ -771,7 +558,7 @@ class PPU(nes: NES) {
     cntsToAddress()
     if (vramAddress < 0x2000) nes.mmap.latchAccess(vramAddress)
   }
-  
+
   /** CPU Register $2007(R): Read from PPU memory. The address should be set first. */
   def vramLoad(): Int = {
     var tmp : Int = -1
@@ -813,20 +600,20 @@ class PPU(nes: NES) {
 
     return tmp
   }
-  
+
   /** CPU Register $2007(W): Write to PPU memory. The address should be set first. */
   def vramWrite(value: Int): Unit = {
     triggerRendering()
     cntsToAddress()
     regsToAddress()
-    
+
     if (vramAddress >= 0x2000) {
       // Mirroring is used.
       mirroredWrite(vramAddress, value)
     } else {
       // Write normally.
       writeMem(vramAddress, value)
-            
+
       // Invoke mapper latch:
       nes.mmap.latchAccess(vramAddress)
     }
@@ -836,12 +623,12 @@ class PPU(nes: NES) {
     regsFromAddress()
     cntsFromAddress()
   }
-  
+
   /**  CPU Register $4014: Write 256 bytes of main memory into Sprite RAM. */
   def sramDMA(value: Int): Unit = {
     var baseAddress : Int = value * 0x100
     var data : Int = 0
-    
+
     for (i <- sramAddress to 256) {
       data = nes.cpu.memory(baseAddress+i)
       spriteMem(i) = data
@@ -850,11 +637,11 @@ class PPU(nes: NES) {
 
     nes.cpu.haltCycles(513)
   }
-  
+
   /** Updates the scroll registers from a new VRAM address. */
   def regsFromAddress(): Unit = {
     var address : Int = (vramTmpAddress>>8)&0xFF
-    
+
     regFV = (address>>4)&7
     regV = (address>>3)&1
     regH = (address>>2)&1
@@ -864,21 +651,21 @@ class PPU(nes: NES) {
     regVT = (regVT&24) | ((address>>5)&7)
     regHT = address&31
   }
-  
+
   /** Updates the scroll registers from a new VRAM address. */
   def cntsFromAddress(): Unit = {
     var address : Int = (vramAddress>>8)&0xFF
-    
+
     cntFV = (address>>4)&3
     cntV = (address>>3)&1
     cntH = (address>>2)&1
-    cntVT = (cntVT&7) | ((address&3)<<3)    
-        
+    cntVT = (cntVT&7) | ((address&3)<<3)
+
     address = vramAddress&0xFF
     cntVT = (cntVT&24) | ((address>>5)&7)
     cntHT = address&31
   }
-  
+
   /* Updates the VRAM address from the scroll registers. */
   def regsToAddress(): Unit = {
     var b1 : Int = (regFV&7)<<4
@@ -888,23 +675,23 @@ class PPU(nes: NES) {
 
     var b2 : Int = (regVT&7)<<5
     b2 |= regHT&31
-    
+
     vramTmpAddress = ((b1<<8) | b2)&0x7FFF
   }
-  
+
   /* Updates the VRAM address from the scroll registers. */
   def cntsToAddress(): Unit = {
     var b1 : Int = (cntFV&7)<<4
     b1 |= (cntV&1)<<3
     b1 |= (cntH&1)<<2
     b1 |= (cntVT>>3)&3
-        
+
     var b2 : Int = (cntVT&7)<<5
     b2 |= cntHT&31
 
     vramAddress = ((b1<<8) | b2)&0x7FFF
   }
-  
+
   /** Updates the scroll registers with tile count */
   def incTileCounter(count: Int): Unit = {
     for (i <- count to 1 by -1) {
@@ -927,10 +714,10 @@ class PPU(nes: NES) {
       }
     }
   }
-  
+
   /** Reads from memory, taking into account mirroring/mapping of address ranges. */
   def mirroredLoad(address: Int): Int = vramMem(vramMirrorTable(address))
-  
+
   /** Writes to memory, taking into account mirroring/mapping of address ranges. */
   def mirroredWrite(address: Int, value: Int): Unit = {
     if (address >= 0x3f00 && address < 0x3f20) {
@@ -938,7 +725,7 @@ class PPU(nes: NES) {
       if (address == 0x3F00 || address == 0x3F10) {
         writeMem(0x3F00, value)
         writeMem(0x3F10, value)
-                
+
       } else if (address == 0x3F04 || address == 0x3F14) {
         writeMem(0x3F04, value)
         writeMem(0x3F14, value)
@@ -956,7 +743,7 @@ class PPU(nes: NES) {
       } else Dynamic.global.alert("Invalid VRAM address: " + address.toString())
     }
   }
-  
+
   /** Start rendering frames at scanline. */
   def triggerRendering(): Unit = {
     if (scanline >= 21 && scanline <= 260) {
@@ -967,11 +754,11 @@ class PPU(nes: NES) {
       lastRenderedScanline = scanline - 21
     }
   }
-  
+
   /** Start rendering sprites and background at given scanline */
   def renderFramePartially(startScan: Int, scanCount: Int): Unit = {
     if (f_spVisibility == 1) renderSpritesPartially(startScan, scanCount, true)
-        
+
     if(f_bgVisibility == 1) {
       var si : Int = startScan<<8
       var ei : Int = (startScan+scanCount)<<8
@@ -984,25 +771,25 @@ class PPU(nes: NES) {
 
     validTileData = false
   }
-  
+
   /** Renders the tile data for a given scanline */
   def renderBgScanline(pbgbuffer: Boolean, scan: Int): Unit = {
     var baseTile : Int = (if (regS == 0) 0 else 256)
     var destIndex : Int = (scan<<8) - regFH
-    
+
     curNt = ntable1(cntV + cntV + cntH)
     cntHT = regHT
     cntH = regH
     curNt = ntable1(cntV + cntV + cntH)
-        
+
     if (scan < 240 && (scan - cntFV) >= 0) {
       val tscanoffset : Int = cntFV<<3
       val targetBuffer : Array[Int] = bgbuffer.getOrElse(buffer)
-      
+
       var t : Tile = null
       var tpix : Array[Int] = null
       var att, col : Int = 0
-      
+
       for (tile <- 0 until 32) {
         if (!((validTileData && scantile(tile) == null)||(!validTileData && ptTile(baseTile + nameTable(curNt).getTileIndex(cntHT, cntVT)) == null))) {
           if (scan >= 0) {
@@ -1066,7 +853,7 @@ class PPU(nes: NES) {
         validTileData = true
       }
     }
-        
+
     // update vertical scroll:
     cntFV += 1
     if (cntFV == 8) {
@@ -1083,7 +870,7 @@ class PPU(nes: NES) {
       validTileData = false
     }
   }
-  
+
   /** Renders the sprite data for a given scanline */
   def renderSpritesPartially(startScan: Int, scanCount: Int, bgPri: Boolean): Unit = {
     if (f_spVisibility == 1) {
@@ -1105,9 +892,9 @@ class PPU(nes: NES) {
           } else {
             // 8x16 sprites
             var top : Int = sprTile(i)
-            
+
             if ((top&1)!=0) top = sprTile(i) - 1 + 256
-            
+
             var srcy1 : Int = 0
             var srcy2 : Int = 8
 
@@ -1121,27 +908,27 @@ class PPU(nes: NES) {
 
             if (sprY(i)+8 < startScan) srcy1 = startScan - (sprY(i) + 8 + 1)
             if (sprY(i)+16 > startScan + scanCount) srcy2 = startScan + scanCount - (sprY(i)+8)
-            
+
             ptTile(top + (if (vertFlip(i)) 0 else 1)).render(buffer, 0, srcy1, 8, srcy2, sprX(i), sprY(i) + 1 + 8, sprCol(i), sprPalette, horiFlip(i), vertFlip(i), i, pixrendered)
           }
         }
       }
     }
   }
-  
+
   /** Checks sprite 0 hit for given scanline. Hit depends on sprite size. */
   def checkSprite0(scan: Int): Boolean = {
     spr0HitX = -1
     spr0HitY = -1
-    
+
     var toffset : Int = -1
     var tIndexAdd : Int = (if (f_spPatternTable == 0) 0 else 256)
     var t: Tile = null
     var bufferIndex : Int = -1
-        
+
     var x: Int = sprX(0)
     var y: Int = sprY(0) + 1
-        
+
     if (f_spriteSize == 0) { // 8x8 sprites.
       // Check range:
       if (y <= scan && y + 8 > scan && x >= -7 && x < 256) { // Sprite is in range.
@@ -1150,7 +937,7 @@ class PPU(nes: NES) {
 
         if (vertFlip(0)) toffset = 7 - (scan - y)
         else toffset = scan - y
-        
+
         toffset *= 8
         bufferIndex = scan * 256 + x
 
@@ -1181,7 +968,7 @@ class PPU(nes: NES) {
             }
             x += 1
             bufferIndex += 1
-          }   
+          }
         }
       }
     } else { // 8x16 sprites:
@@ -1213,7 +1000,7 @@ class PPU(nes: NES) {
                 }
               }
             }
-            
+
             x += 1
             bufferIndex += 1
           }
@@ -1236,7 +1023,7 @@ class PPU(nes: NES) {
   }
   return false
   }
-  
+
   /** Writes to PPU memory, and updates internally buffered data appropriately. */
   def writeMem(address: Int, value: Int): Unit = {
     vramMem(address) = value
@@ -1245,19 +1032,19 @@ class PPU(nes: NES) {
     if (address < 0x2000) {
       vramMem(address) = value
       patternWrite(address,value)
-    } else if (address >= 0x2000 && address < 0x23c0) {    
+    } else if (address >= 0x2000 && address < 0x23c0) {
       nameTableWrite(ntable1(0), address - 0x2000, value)
-    } else if (address >= 0x23c0 && address < 0x2400) {    
+    } else if (address >= 0x23c0 && address < 0x2400) {
       attribTableWrite(ntable1(0), address-0x23c0, value)
-    } else if (address >= 0x2400 && address < 0x27c0) {    
+    } else if (address >= 0x2400 && address < 0x27c0) {
       nameTableWrite(ntable1(1), address-0x2400, value)
-    } else if (address >= 0x27c0 && address < 0x2800) {    
+    } else if (address >= 0x27c0 && address < 0x2800) {
       attribTableWrite(ntable1(1), address-0x27c0, value)
-    } else if (address >= 0x2800 && address < 0x2bc0) {    
+    } else if (address >= 0x2800 && address < 0x2bc0) {
       nameTableWrite(ntable1(2), address-0x2800, value)
-    } else if (address >= 0x2bc0 && address < 0x2c00) {    
+    } else if (address >= 0x2bc0 && address < 0x2c00) {
       attribTableWrite(ntable1(2), address-0x2bc0, value)
-    } else if (address >= 0x2c00 && address < 0x2fc0) {    
+    } else if (address >= 0x2c00 && address < 0x2fc0) {
       nameTableWrite(ntable1(3), address-0x2c00, value)
     } else if (address >= 0x2fc0 && address < 0x3000) {
       attribTableWrite(ntable1(3), address - 0x2fc0, value)
@@ -1265,7 +1052,7 @@ class PPU(nes: NES) {
       updatePalettes()
     }
   }
-  
+
   /** Reads data from $3f00 to $f20 into the two buffered palettes. */
   def updatePalettes(): Unit = {
     for (i <- 0 until 16) {
@@ -1278,7 +1065,7 @@ class PPU(nes: NES) {
       else sprPalette(i) = palTable.getEntry(vramMem(0x3f10 + i) & 32)
     }
   }
-  
+
   /** Updates the internal pattern table buffers with new given value. */
   def patternWrite(address: Int, value: Int): Unit = {
     var tileIndex : Int = address / 16
@@ -1287,24 +1074,24 @@ class PPU(nes: NES) {
     if (leftOver < 8) ptTile(tileIndex).setScanline(leftOver, value, vramMem(address + 8))
     else ptTile(tileIndex).setScanline(leftOver - 8, vramMem(address - 8), value)
   }
-  
+
   /** Updates the internal name table buffers with this new byte. */
   def nameTableWrite(index: Int, address: Int, value: Int): Unit = {
     nameTable(index).tile(address) = value
-    
+
     // Update Sprite #0 hit:
     checkSprite0(scanline - 20)
   }
-  
+
   /** Updates the internal pattern table buffers with this new attribute table byte. */
   def attribTableWrite(index: Int, address: Int, value: Int): Unit = nameTable(index).writeAttrib(address, value)
-  
+
   /** Updates the internally buffered sprite data with this new byte of info. */
   def spriteRamWriteUpdate(address: Int, value: Int): Unit = {
     var tIndex : Int = Math.floor(address / 4).asInstanceOf[Int]
-    
+
     if (tIndex == 0) checkSprite0(scanline - 20)
-    
+
     if (address % 4 == 0) sprY(tIndex) = value // Y coordinate
     else if (address % 4 == 1) sprTile(tIndex) = value // Tile index
     else if (address % 4 == 2) {
@@ -1328,6 +1115,344 @@ class PPU(nes: NES) {
 }
 
 object PPU {
+
+  /** The NameTable will contain two arrays:
+    * - Tile:
+    * 			Each byte in this array controls one 8x8 pixel character cell, and each nametable has 30 rows of 32 tiles each.
+    *
+    * - Attribute (Attrib):
+    *			The attribute table is a 64-byte array at the end of each nametable that controls which palette is assigned to each part of the background.
+    *
+    * A NES will contain 4 NameTables, arranged in a 2x2 pattern.
+    */
+  class NameTable(w: Int, h: Int, n: String) {
+    val width : Int = w
+    val height : Int = h
+    val name : String = n
+
+    // Initially filled with 0's.
+    var tile : Array[Int] = Array.fill(width*height)(0)
+    /** Controls which palette is assigned to each part of the background.  */
+    var attrib : Array[Int] = Array.fill(width*height)(0)
+
+    /** Returns the searched tile. */
+    def getTileIndex(x: Int, y: Int): Int = tile(y*width+x)
+
+    /** Returns the searched attribute. */
+    def getAttrib(x: Int, y: Int): Int = attrib(y*width+x)
+
+    /** Writes given value in given index in the attributes table.
+      * Note that the for loop (and bit operations) is necessary to select only what we want to change, as each byte in the attribute table controls a palette of a 32x32 pixel.
+      */
+    def writeAttrib(index: Int, value: Int): Unit = {
+      val basex: Int = (index % 8) * 4
+      val basey : Int = (index / 8) * 4
+      var add : Int = 0
+      var tx, ty : Int = 0
+      var attindex : Int = 0
+
+      //var sqy, sqx : Int = 0
+      for (sqy <- 0 until 2; sqx <- 0 until 2) {
+        add = (value>>(2*(sqy*2+sqx)))&3 // Bit operators
+        for (y <- 0 until 2; x <- 0 until 2) {
+          tx = basex+sqx*2+x
+          ty = basey+sqy*2+y
+          attindex = ty*width+tx
+          attrib(ty*width+tx) = (add<<2)&12
+        }
+      }
+    }
+
+    // TODO if necessary : To and from JSON
+  }
+
+  /** The PaletteTable will contain two arrays and one global variable:
+    * - curTable:
+    *     Contains the used color palette. Can be either the default NES, NTSC or PAL.
+    *
+    * - Emphasis Table (emphTable):
+    *	    Will contain the corresponding emphasised color for each color of the palette.
+    *
+    * - Emphasis (currentEmph and emph):
+    *      The color emphasis will be used to change the luminance amd chrominance phasor of each color, by using the RGB components.
+    *
+    * Each NES has only one color Palette.
+    */
+  class PaletteTable {
+    var curTable : Array[Int] = new Array[Int](64)
+    var emphTable : Array[Array[Int]] = Array.ofDim[Int](8, 64)
+    var currentEmph : Int = -1
+
+    /** Resets the Palette */
+    def reset(): Unit = setEmphasis(0)
+
+    /** Loads the NTSC Palette */
+    def loadNTSCPalette(): Unit = {
+      curTable = Array(0x525252,
+          0xB40000,
+          0xA00000,
+          0xB1003D,
+          0x740069,
+          0x00005B,
+          0x00005F,
+          0x001840,
+          0x002F10,
+          0x084A08,
+          0x006700,
+          0x124200,
+          0x6D2800,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xC4D5E7,
+          0xFF4000,
+          0xDC0E22,
+          0xFF476B,
+          0xD7009F,
+          0x680AD7,
+          0x0019BC,
+          0x0054B1,
+          0x006A5B,
+          0x008C03,
+          0x00AB00,
+          0x2C8800,
+          0xA47200,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xF8F8F8,
+          0xFFAB3C,
+          0xFF7981,
+          0xFF5BC5,
+          0xFF48F2,
+          0xDF49FF,
+          0x476DFF,
+          0x00B4F7,
+          0x00E0FF,
+          0x00E375,
+          0x03F42B,
+          0x78B82E,
+          0xE5E218,
+          0x787878,
+          0x000000,
+          0x000000,
+          0xFFFFFF,
+          0xFFF2BE,
+          0xF8B8B8,
+          0xF8B8D8,
+          0xFFB6FF,
+          0xFFC3FF,
+          0xC7D1FF,
+          0x9ADAFF,
+          0x88EDF8,
+          0x83FFDD,
+          0xB8F8B8,
+          0xF5F8AC,
+          0xFFFFB0,
+          0xF8D8F8,
+          0x000000,
+          0x000000)
+      makeTables()
+      setEmphasis(0)
+    }
+
+    /** Loads the PAL Palette */
+    def loadPALPalette(): Unit = {
+      curTable = Array(0x525252,
+          0xB40000,
+          0xA00000,
+          0xB1003D,
+          0x740069,
+          0x00005B,
+          0x00005F,
+          0x001840,
+          0x002F10,
+          0x084A08,
+          0x006700,
+          0x124200,
+          0x6D2800,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xC4D5E7,
+          0xFF4000,
+          0xDC0E22,
+          0xFF476B,
+          0xD7009F,
+          0x680AD7,
+          0x0019BC,
+          0x0054B1,
+          0x006A5B,
+          0x008C03,
+          0x00AB00,
+          0x2C8800,
+          0xA47200,
+          0x000000,
+          0x000000,
+          0x000000,
+          0xF8F8F8,
+          0xFFAB3C,
+          0xFF7981,
+          0xFF5BC5,
+          0xFF48F2,
+          0xDF49FF,
+          0x476DFF,
+          0x00B4F7,
+          0x00E0FF,
+          0x00E375,
+          0x03F42B,
+          0x78B82E,
+          0xE5E218,
+          0x787878,
+          0x000000,
+          0x000000,
+          0xFFFFFF,
+          0xFFF2BE,
+          0xF8B8B8,
+          0xF8B8D8,
+          0xFFB6FF,
+          0xFFC3FF,
+          0xC7D1FF,
+          0x9ADAFF,
+          0x88EDF8,
+          0x83FFDD,
+          0xB8F8B8,
+          0xF5F8AC,
+          0xFFFFB0,
+          0xF8D8F8,
+          0x000000,
+          0x000000)
+      makeTables()
+      setEmphasis(0)
+    }
+
+    /** Creates the emphasis table for each existing emphasis (0 to 8), using the given Palette (NTSC, PAL or default) */
+    def makeTables(): Unit = {
+      var r, g, b, col, i : Int = 0
+      var rFactor, gFactor, bFactor : Double = 1.0
+
+      // Calculate a table for each possible emphasis
+      for (emph <- 0 until 8) {
+        // Determine color componenet factors
+        if ((emph & 1) != 0) {
+          rFactor = 0.75
+          bFactor = 0.75
+        }
+        if ((emph & 2) != 0) {
+          rFactor = 0.75
+          gFactor = 0.75
+        }
+        if ((emph & 4) != 0) {
+          gFactor = 0.75
+          bFactor = 0.75
+        }
+
+        // Calculate table
+        for (i <- 0 until 64) {
+          col = curTable(i)
+          r = (getRed(col) * rFactor).toInt
+          g = (getGreen(col) * gFactor).toInt
+          b = (getBlue(col) * bFactor).toInt
+          emphTable(emph)(i) = getRgb(r,g,b)
+        }
+      }
+    }
+
+    /** Sets the current emphasis to given value. */
+    def setEmphasis(emph: Int): Unit = {
+      if (emph != currentEmph) {
+        currentEmph = emph
+        var i : Int = 0
+        for (i <- 0 until 64) curTable(i) = emphTable(emph)(i)
+      }
+    }
+
+    /** Get the given entry form the curTable */
+    def getEntry(yiq: Int): Int = curTable(yiq)
+
+    /** Extract red component from a RGB color */
+    def getRed(rgb: Int): Int = (rgb>>16)&0xFF
+
+    /** Extract green component from a RGB color */
+    def getGreen(rgb: Int): Int = (rgb>>8)&0xFF
+
+    /** Extract blue component from a RGB color */
+    def getBlue(rgb: Int): Int = (rgb&0xFF)
+
+    /** Get the RGB color, given the red, blue and green component */
+    def getRgb(r: Int, g: Int, b: Int): Int = ((r<<16)|(g<<8)|(b))
+
+    /** Loads the default NES Palette (given by wiki) */
+    def loadDefaultPalette(): Unit = {
+      curTable = Array(getRgb(117,117,117),
+          getRgb(39,27,143),
+          getRgb(0,0,171),
+          getRgb(71,0,159),
+          getRgb(143,0,119),
+          getRgb(171,0,19),
+          getRgb(167,0,0),
+          getRgb(127,11,0),
+          getRgb(67,47,0),
+          getRgb(0,71,0),
+          getRgb(0,81,0),
+          getRgb(0,63,23),
+          getRgb(27,63,95),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(188,188,188),
+          getRgb(0,115,239),
+          getRgb(35,59,239),
+          getRgb(131,0,243),
+          getRgb(191,0,191),
+          getRgb(231,0,91),
+          getRgb(219,43,0),
+          getRgb(203,79,15),
+          getRgb(139,115,0),
+          getRgb(0,151,0),
+          getRgb(0,171,0),
+          getRgb(0,147, 59),
+          getRgb(0,131,139),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(255,255,255),
+          getRgb(63,191,255),
+          getRgb(95,151,255),
+          getRgb(167,139,253),
+          getRgb(247,123,255),
+          getRgb(255,119,183),
+          getRgb(255,119,99),
+          getRgb(255,155,59),
+          getRgb(243,191,63),
+          getRgb(131,211,19),
+          getRgb(79,223,75),
+          getRgb(88,248,152),
+          getRgb(0,235,219),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(255,255,255),
+          getRgb(171,231,255),
+          getRgb(199,215,255),
+          getRgb(215,203,255),
+          getRgb(255,199,219),
+          getRgb(255,191,179),
+          getRgb(255,219,171),
+          getRgb(255,231,163),
+          getRgb(227,255,163),
+          getRgb(171,243,191),
+          getRgb(179,255,207),
+          getRgb(159,255,243),
+          getRgb(0,0,0),
+          getRgb(0,0,0),
+          getRgb(0,0,0))
+
+      makeTables()
+      setEmphasis(0)
+    }
+
+  }
 
   /** The Tile contains:
     * - pix and opaque:
@@ -1424,7 +1549,6 @@ object PPU {
         tIndex = 0
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
@@ -1437,7 +1561,6 @@ object PPU {
         tIndex = 7
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1
@@ -1452,7 +1575,6 @@ object PPU {
 
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex += 1
@@ -1467,7 +1589,6 @@ object PPU {
 
         for (y <- 0 until 8) {
           for (x <- 0 until 8) {
-            // Code in if is the same everywhere. So I put it in a function
             renderFunction(buffer, palette, palAdd, x, y, pri, priTable)
             fbIndex += 1
             tIndex -= 1

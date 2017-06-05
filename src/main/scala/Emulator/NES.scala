@@ -7,13 +7,12 @@ import scala.scalajs.js.timers.SetIntervalHandle
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-/** Class permitting to initialise, start and reset the emulator. 
+/** Class permitting to initialise, start and reset the emulator.
   * Object instance will be called and used by almost all other classes.
   */
 class NES() {
   // Init. all instances and state variables used for the emulator
   val ui: UI = new UI(this)
-  var program: Program = null
 
   // Init. accessible components
   var cpu: CPU = new CPU(this)
@@ -41,12 +40,6 @@ class NES() {
   mapperTable(5) = (() => new MMC5(this))
 
   ui.updateStatus("Ready to load ROM")
-
-  def loadProgram(data: Int): Unit = {
-    program = new Program(this)
-    program.load(data)
-    reset
-  }
 
   /** Launch the emulator */
   def start: Unit = {
