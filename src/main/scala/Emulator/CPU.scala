@@ -15,7 +15,7 @@ class CPU(nes: NES) {
 
   //Registers:
   var pc: Int = 0 //Program Counter (16 bits)
-  var sp: Int = 0 //Stack Pointer (16 bits)
+  var sp: Int = 0 //Stack Pointer (8 bits)
   var a: Int = 0 //Accumulator (8 bits)
   var x: Int = 0 //Index Register X (8 bits)
   var y: Int = 0 //Index Register Y (8 bits)

@@ -36,8 +36,6 @@ class ROM(nes: NES) {
   var prgRom: Array[Array[Byte]] = _
   var chrRom: Array[Array[Byte]] = _
   var vromTile: Array[Array[PPU.Tile]] = _
-  var PCPRom: Array[Byte] = _ //unimplemented yet
-  var PCINSTRom: Array[Byte] = _ //unimplemented yet
 
   //ROM sizes
   var prgRomSize: Int = 0
