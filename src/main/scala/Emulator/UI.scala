@@ -136,7 +136,7 @@ class UI(nes: NES) {
   def updateStatus(message: String): Unit = {
     if(status != null) status.innerHTML = message
   }
-  
+
   def writeFrame(buffer: Array[Int], prevBuffer: Array[Int]): Unit = {
     val imageData = canvasImageData.data
     var pixel: Int = 0
