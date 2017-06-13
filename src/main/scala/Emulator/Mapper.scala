@@ -51,7 +51,7 @@ abstract class Mapper(nes: NES) {
     }
   }
 
-  /** Same as write */
+  /** Same as write */ /*
   def writeLow(address: Int, value: Byte) {
     if (address < 0x2000) {
       // Mirroring of RAM:
@@ -67,7 +67,7 @@ abstract class Mapper(nes: NES) {
       regWrite(address, value)
     }
   }
-
+  */
   /** Write to I/O registers */
   def regWrite(address: Int, value: Byte) {
     (address: @switch) match {
@@ -93,7 +93,7 @@ abstract class Mapper(nes: NES) {
       nes.ppu.writeVRAMAddress(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x2007 =>
       // Write to VRAM:
-      nes.ppu.vramWrite(value) //PPU uses Int, therefore need to unsign
+      nes.ppu.vramWrite(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
       case 0x4014 =>
       // Sprite Memory DMA Access
       nes.ppu.sramDMA(nes.cpu.unsign(value)) //PPU uses Int, therefore need to unsign
@@ -168,7 +168,7 @@ abstract class Mapper(nes: NES) {
           // main memory in addition
           // to as flags in the PPU.
           // (not in the real NES)
-            nes.cpu.unsign(nes.ppu.readStatusRegister())
+            nes.ppu.readStatusRegister()
           case 0x3 =>
             0
           case 0x4 =>
@@ -370,11 +370,10 @@ abstract class Mapper(nes: NES) {
     if (nes.rom.getChrRomSize != 0) {
       nes.ppu.triggerRendering
       if (halfBank % 2 == 0) {
-        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).take(0x1000).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x1000)
+        nes.rom.chrRom((halfBank % (nes.rom.getChrRomSize*2))/ 2 ).take(0x1000).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x1000)
       } else {
-        nes.rom.chrRom((halfBank / 2) % nes.rom.getChrRomSize).drop(0x1000).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x1000)
+        nes.rom.chrRom((halfBank % (nes.rom.getChrRomSize*2))/ 2 ).drop(0x1000).map(x => nes.cpu.unsign(x)).copyToArray(nes.ppu.vramMem, address, 0x1000)
       }
-
       val vromTile: Array[PPU.Tile] = nes.rom.vromTile(halfBank % (nes.rom.getChrRomSize * 2))
       vromTile.copyToArray(nes.ppu.ptTile, address >> 4, 0x100)
     }
