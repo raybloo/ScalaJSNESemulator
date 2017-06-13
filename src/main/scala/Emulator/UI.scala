@@ -1,7 +1,7 @@
 package Emulator
 
 import org.scalajs.dom
-import org.scalajs.dom.{MouseEvent, html}
+import org.scalajs.dom.{KeyboardEvent, MouseEvent, html}
 import org.scalajs.dom.html._
 import org.scalajs.dom.raw.{Event, ImageData}
 import org.scalajs.jquery.jQuery
@@ -29,6 +29,10 @@ class UI(nes: NES) {
   var startCallBack: Function[MouseEvent,_] = _
   var stopCallBack: Function[MouseEvent,_] = _
   var loadCallBack: Function[MouseEvent,_] = _
+
+  var keyPressCallBack: Function[KeyboardEvent,_] = _
+  var keyUpCallBack: Function[KeyboardEvent,_] = _
+  var keyDownCallBack: Function[KeyboardEvent,_] = _
 
   init //Comment this if you want to test the code
 
@@ -75,6 +79,25 @@ class UI(nes: NES) {
 
     startButton.innerHTML = "Load ROM"
     startButton.onclick = loadCallBack
+
+    keyPressCallBack = {
+      e: KeyboardEvent =>
+        nes.keyboard.keyPress(e)
+    }
+
+    keyUpCallBack = {
+      e: KeyboardEvent =>
+        nes.keyboard.keyUp(e)
+    }
+
+    keyDownCallBack = {
+      e: KeyboardEvent =>
+        nes.keyboard.keyDown(e)
+    }
+
+    dom.document.onkeypress = keyPressCallBack
+    dom.document.onkeyup = keyUpCallBack
+    dom.document.onkeydown = keyDownCallBack
 
     root.appendChild(screen)
     root.appendChild(dom.document.createElement("BR").asInstanceOf[BR])
@@ -137,6 +160,7 @@ class UI(nes: NES) {
     if(status != null) status.innerHTML = message
   }
 
+  /** Draw a NES frame on screen */
   def writeFrame(buffer: Array[Int], prevBuffer: Array[Int]): Unit = {
     val imageData = canvasImageData.data
     var pixel: Int = 0
