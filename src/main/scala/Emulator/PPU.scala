@@ -49,7 +49,7 @@ class PPU(nes: NES) {
   var attrib: Array[Int] = null
   var buffer : Array[Int] = null
   var prevBuffer : Array[Int] = null
-  var bgbuffer : Option[Array[Int]] = None
+  var bgbuffer : Array[Int] = null
   var pixrendered : Array[Int] = null
 
   var validTileData : Boolean = false
@@ -148,7 +148,7 @@ class PPU(nes: NES) {
     attrib = new Array(32)
     buffer = new Array(256*240)
     prevBuffer = new Array(256*240)
-    bgbuffer = Some(new Array(256*240))
+    bgbuffer = new Array(256*240)
     pixrendered = new Array(256*240)
 
     validTileData = false
@@ -189,7 +189,7 @@ class PPU(nes: NES) {
 
     // Initialize mirroring lookup table:
     vramMirrorTable = new Array(0x8000)
-    for (i <- 1 until 0x8000) vramMirrorTable(i) = i
+    for (i <- 0 until 0x8000) vramMirrorTable(i) = i
 
     palTable = new PaletteTable()
     palTable.loadNTSCPalette()
@@ -486,8 +486,8 @@ class PPU(nes: NES) {
   }
 
   /** CPU Register $2002: Read the Status Register. */
-  def readStatusRegister(): Byte = {
-    var tmp : Byte = nes.cpu.memory(0x2002)
+  def readStatusRegister(): Int = {
+    val tmp: Int = nes.cpu.unsign(nes.cpu.memory(0x2002))
 
     // Reset scroll & VRAM Address toggle:
     firstWrite = true
@@ -561,7 +561,7 @@ class PPU(nes: NES) {
 
   /** CPU Register $2007(R): Read from PPU memory. The address should be set first. */
   def vramLoad(): Int = {
-    var tmp : Int = -1
+    var tmp : Int = 0
 
     cntsToAddress()
     regsToAddress()
@@ -629,8 +629,8 @@ class PPU(nes: NES) {
     var baseAddress : Int = value * 0x100
     var data : Int = 0
 
-    for (i <- sramAddress to 256) {
-      data = nes.cpu.memory(baseAddress+i)
+    for (i <- sramAddress until 256) {
+      data = nes.cpu.unsign(nes.cpu.memory(baseAddress+i))
       spriteMem(i) = data
       spriteRamWriteUpdate(i, data)
     }
@@ -700,7 +700,7 @@ class PPU(nes: NES) {
         cntHT = 0
         cntVT += 1
         if (cntVT >= 30) {
-          cntH+= 1
+          cntH += 1
           if(cntH == 2) {
             cntH = 0
             cntV += 1
@@ -764,7 +764,11 @@ class PPU(nes: NES) {
       var ei : Int = (startScan+scanCount)<<8
       if (ei > 0xF000) ei = 0xF000
 
-      for (destIndex <- si until ei) if (pixrendered(destIndex) > 0xFF) buffer(destIndex) = bgbuffer.getOrElse(Array.fill(buffer.size)(0))(destIndex)
+      for (destIndex <- si until ei) {
+        if (pixrendered(destIndex) > 0xFF) {
+          buffer(destIndex) = bgbuffer(destIndex)//bgbuffer.getOrElse(Array.fill(buffer.size)(0))(destIndex)
+        }
+      }
     }
 
     if (f_spVisibility == 1) renderSpritesPartially(startScan, scanCount, false)
@@ -784,7 +788,7 @@ class PPU(nes: NES) {
 
     if (scan < 240 && (scan - cntFV) >= 0) {
       val tscanoffset : Int = cntFV<<3
-      val targetBuffer : Array[Int] = bgbuffer.getOrElse(buffer)
+      val targetBuffer : Array[Int] = (if(pbgbuffer) bgbuffer else buffer)
 
       var t : Tile = null
       var tpix : Array[Int] = null
@@ -820,7 +824,7 @@ class PPU(nes: NES) {
 
               if (t.opaque(cntFV)) {
                 while (sx < 8) {
-                  targetBuffer(destIndex) = imgPalette(tpix(tscanoffset + sx) + att)
+                  (if(pbgbuffer) bgbuffer else buffer)(destIndex) = imgPalette(tpix(tscanoffset + sx) + att)
                   pixrendered(destIndex) |= 256
                   destIndex += 1
                   sx += 1
@@ -829,7 +833,7 @@ class PPU(nes: NES) {
                 while (sx < 8) {
                   col = tpix(tscanoffset + sx)
                   if (col != 0) {
-                    targetBuffer(destIndex) = imgPalette(col + att)
+                    (if(pbgbuffer) bgbuffer else buffer)(destIndex) = imgPalette(col + att)
                     pixrendered(destIndex) |= 256
                   }
                   destIndex += 1
@@ -847,6 +851,9 @@ class PPU(nes: NES) {
             cntH %= 2
             curNt = ntable1((cntV << 1) + cntH)
           }
+          if(nes.cpu.debug) Dynamic.global.console.log(s"BG scanline correctly rendered")
+        } else {
+          if(nes.cpu.debug) Dynamic.global.console.log(s"BG scanline skipped")
         }
 
         // Tile data for one row should now have been fetched, so the data in the array is valid.
@@ -914,6 +921,7 @@ class PPU(nes: NES) {
         }
       }
     }
+    if(nes.cpu.debug) Dynamic.global.console.log(s"Sprites Render")
   }
 
   /** Checks sprite 0 hit for given scanline. Hit depends on sprite size. */
@@ -1334,6 +1342,10 @@ object PPU {
       // Calculate a table for each possible emphasis
       for (emph <- 0 until 8) {
         // Determine color componenet factors
+        rFactor = 1.0
+        gFactor = 1.0
+        bFactor = 1.0
+
         if ((emph & 1) != 0) {
           rFactor = 0.75
           bFactor = 0.75

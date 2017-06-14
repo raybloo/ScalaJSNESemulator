@@ -98,6 +98,7 @@ class NES() {
         if (ppu.requestEndFrame) {
           ppu.nmiCounter -= 1
           if (ppu.nmiCounter == 0) {
+            Dynamic.global.console.log("End frame requested")
             ppu.requestEndFrame = false
             ppu.startVBlank
             stop = true
@@ -114,6 +115,7 @@ class NES() {
         }
       }
     }
+    Dynamic.global.console.log("Frame Completed")
     frameCount += 1
   }
 

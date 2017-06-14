@@ -50,6 +50,16 @@ class CPU(nes: NES) {
     - anything else : undefined
    */
 
+  //Debug utilities
+  final val debug = true
+  var instructionCounter = 0
+  final val logSize = 60
+  var log: Array[(Int,Int,Int,Int)] = new Array(logSize) //Instruction, Addressing Mode, Address, PC
+  var logSeek = 0
+  var logAvail = false
+
+
+
  //Maskable Interrupt
   var interrupt = null
 
@@ -60,16 +70,16 @@ class CPU(nes: NES) {
 
     //Internal RAM
     for(i <- 0 until 0x2000) {
-      memory(i) =  -1 //0xFF
+      memory(i) =  0xFF.toByte
     }
 
     //Special Addresses
     for (p <- 0 until 4) {
       val i = p*0x800
-      memory(i+0x008) = -9//0xF7
-      memory(i+0x009) = -17//0xEF
-      memory(i+0x00A) = -33//0xDF
-      memory(i+0x00F) = -65//0xBF
+      memory(i+0x008) = 0xF7.toByte
+      memory(i+0x009) = 0xEF.toByte
+      memory(i+0x00A) = 0xDF.toByte
+      memory(i+0x00F) = 0xBF.toByte
     }
 
     //Everything else set to 0
@@ -113,7 +123,7 @@ class CPU(nes: NES) {
     // Interrupt notification:
     irqRequested = false
     irqType = 3
-
+    showMem()
   }
 
   /** Get all the flags into one single Byte */
@@ -190,6 +200,12 @@ class CPU(nes: NES) {
     }
     else {
       nes.mmap.write(address,value)
+    }
+    if(instructionCounter < 0){
+      nes.stop
+      printLog
+      showMem()
+      instructionCounter+=1
     }
   }
 
@@ -297,16 +313,24 @@ class CPU(nes: NES) {
         addr+=y
       case OpData.INDIRECT => //Indirect Absolute mode, Find the 16-bit address contained at the given location
         addr = load2Words(opaddr+2)
+
+        Dynamic.global.console.log(s"Indirect Address Mode Intermediate Address: $addr")
+
         if(addr < 0x1FFF) {
           addr = unsign(memory(addr)) + (unsign(memory((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff))) << 8) //Read from address given in op
         } else {
-          addr = unsign(nes.mmap.load(addr)) + (nes.mmap.load((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff)) << 8) //When addr exceeds 0x1fff then it is mapped memory
+          addr = unsign(nes.mmap.load(addr)) + (unsign(nes.mmap.load((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff))) << 8) //When addr exceeds 0x1fff then it is mapped memory
         }
+        Dynamic.global.console.log(s"Indirect Address Mode Final Address: $addr")
       case _ =>
         nes.stop
         Dynamic.global.console.log(s"ERROR: Invalid Address Mode $addrMode")
-        Dynamic.global.console.log(s"caused by Op code $op")
-        Dynamic.global.console.log(s"at Op address $opaddr")
+        Dynamic.global.console.log(s"Instruction $opinf")
+        Dynamic.global.console.log(s"Addressing Mode $addrMode")
+        Dynamic.global.console.log(s"Address $addr")
+        Dynamic.global.console.log(s"PC $pc")
+        printLog
+
     }
     addr&=0xffff //Address mustn't exceed 16 bits
 
@@ -430,7 +454,7 @@ class CPU(nes: NES) {
       case 22  => //DEY: Decrement index Y by one
         y = (y-1)&0xff
         negativeFlag = (y & 0x80) != 0
-        zeroFlag = x == 0
+        zeroFlag = y == 0
       case 23  => //EOR: XOR Memory with accumulator, stores in accumulator
         a = load1Word(addr)^a
         negativeFlag = (a & 0x80) != 0
@@ -451,7 +475,7 @@ class CPU(nes: NES) {
         zeroFlag = y == 0
       case 27  => //JMP: Jump to new location
         pc = addr-1
-      case 28  => //JSR: Jump to new location, pushing the return address on the stack
+      case 28  => //JSR: Jump to subroutine, pushing the return address on the stack
         push((pc>>8).toByte)
         push(pc.toByte)
         pc = addr-1
@@ -594,16 +618,69 @@ class CPU(nes: NES) {
         zeroFlag = y == 0
       case _ =>
         nes.stop
-        Dynamic.global.console.log(s"ERROR: Invalid Operation $op")
-        Dynamic.global.console.log(s"at $opaddr")
+        //Dynamic.global.console.log(s"ERROR: Invalid Operation $op")
+        //Dynamic.global.console.log(s"at $opaddr")
+        Dynamic.global.console.log(s"ERROR: Invalid Operation")
+        Dynamic.global.console.log(s"Instruction $opinf")
+        Dynamic.global.console.log(s"Addressing Mode $addrMode")
+        Dynamic.global.console.log(s"Address $addr")
+        Dynamic.global.console.log(s"PC $pc")
+        printLog
+        //fakeCounter = 0
     }
-    //Dynamic.global.console.log(s"Op #$opinf has been executed")
-    //Dynamic.global.console.log(s"with addressing mode #$addrMode")
+
+    instructionCounter += 1
+    if(debug) {
+      Dynamic.global.console.log(s"$instructionCounter: PC $pc")
+      if (instructionCounter > 17390 && instructionCounter < 17800) {
+        Dynamic.global.console.log(s"Instruction $opinf with mode $addrMode")
+        //Dynamic.global.console.log(s"Addressing Mode $addrMode")
+        Dynamic.global.console.log(s"Address $addr")
+        Dynamic.global.console.log(s"Registers a: $a  x: $x  y: $y")
+        //Dynamic.global.console.log(s"X $x")
+        //Dynamic.global.console.log(s"Y $y")
+        //Dynamic.global.console.log(s"PC $pc")
+        //fakeCounter-=1
+      }
+      nes.stop
+    }
+
+    storeLog(opinf,addrMode,addr,pc)
+    if(!logAvail && (logSeek <= 0)) logAvail = !logAvail
+
     cycleCount
+  }
+
+  /** Print RAM content of the first 64 bytes, used for debugging */
+  def showMem(): Unit = {
+    Dynamic.global.console.log(s"Memory")
+    for(i <- 0 until 0x40) {
+      Dynamic.global.console.log(s"$i : ${unsign(memory(i))}")
+    }
+  }
+
+  /** Store one instruction with addressing mode, address and pc in log */
+  def storeLog(op: Int, addrm: Int, address: Int, pcount: Int): Unit = {
+    log(logSeek) = (op,addrm,address,pcount)
+    logSeek = (logSeek + logSize - 1) % logSize
+  }
+
+  /** Print the content of the log, used for debugging */
+  def printLog: Unit = {
+    if(logAvail) {
+      for (i <- logSeek until logSeek + logSize) {
+        Dynamic.global.console.log(s"Log: ${((i- logSeek) % logSize)  + 1 }")
+        Dynamic.global.console.log(s"Instruction ${log(i % logSize)._1}")
+        Dynamic.global.console.log(s"Addressing Mode ${log(i % logSize)._2}")
+        Dynamic.global.console.log(s"Address ${log(i % logSize)._3}")
+        Dynamic.global.console.log(s"PC ${log(i % logSize)._4}")
+      }
+    }
   }
 
   /** Request interrupt */
   def requestIrq(irType: Int): Unit = {
+    Dynamic.global.console.log(s"IRQ of type $irType requested")
     if(!(irqRequested && irType == 0)) { //normal interrupt type
       irqRequested = true
       irqType = irType
@@ -625,7 +702,7 @@ class CPU(nes: NES) {
     breakCommand_new = false
     pc_new = nes.mmap.load(0xfffe) | (nes.mmap.load(0xffff) << 8)
     pc_new -= 1
-    //Dynamic.global.console.log("NORMAL IRQ")
+    Dynamic.global.console.log("NORMAL IRQ")
   }
 
   /** Execute unmaksable interrupt code */
@@ -637,16 +714,16 @@ class CPU(nes: NES) {
       push(status)
       pc_new = nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8)
       pc_new -= 1
-      //Dynamic.global.console.log("NM IRQ")
+      Dynamic.global.console.log(s"NM IRQ VECTOR IS: ${nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8)}")
+      if(debug) showMem()
     }
   }
 
   /** Execute reset interrupt code */
   def doResetIrq: Unit = {
     pc_new = nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8)
-    Dynamic.global.console.log(s"RESET VECTOR IS: ${nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8)}")
     pc_new -= 1
-    //Dynamic.global.console.log("RESET IRQ")
+    Dynamic.global.console.log(s"RESET VECTOR IS: ${nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8)}")
   }
 
   /** Push a value on the stack */
@@ -709,6 +786,7 @@ class CPU(nes: NES) {
     final val INDIRECT_YINDEXED = 11
     final val INDIRECT = 12
 
+    /** Set one instruction infos */
     def setOp(opAddr: Int,instr: Int,addrMode: Int,size: Int,cycle: Int): Unit = {
       instructions(opAddr) = instr
       addressingMode(opAddr) = addrMode
@@ -716,6 +794,7 @@ class CPU(nes: NES) {
       cycles(opAddr) = cycle
     }
 
+    /** Initialize all instructions infos */
     def init: Unit = {
       //Fill in all valid opcodes:
 
