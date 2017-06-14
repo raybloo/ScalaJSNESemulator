@@ -200,10 +200,11 @@ class ROM(nes: NES) {
     val flagByte = getHeader(6)
     if((flagByte & 8) != 0){
       FourscreenMirroring
-    } else if((flagByte & 1) != 0) {
-      VerticalMirroring
-    } else {
+    }
+    else if((flagByte & 1) == 0) {
       HorizontalMirroring
+    } else {
+      VerticalMirroring
     }
   }
 

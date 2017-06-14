@@ -341,7 +341,7 @@ class PPU(nes: NES) {
         // Wrap around:
         scanline = -1 // will be incremented to 0
 
-      case default =>
+      case _ =>
         if (scanline >= 21 && scanline <= 260) {
 
           // Render normally:
@@ -350,7 +350,12 @@ class PPU(nes: NES) {
               // update scroll:
               cntHT = regHT
               cntH = regH
+//              if(nes.cpu.instructionCounter > 8000000) {
+//                Dynamic.global.console.log(s"cntV is ${cntV} pixr is ${pixrendered((230<<8)+240)}")
+//              }
               renderBgScanline(true, scanline+1-21)
+              //if(nes.cpu.instructionCounter > 8000000) Dynamic.global.console.log(s"pixr is ${pixrendered((230<<8)+240)}")
+
             }
 
             scanlineAlreadyRendered = false
@@ -443,6 +448,7 @@ class PPU(nes: NES) {
         buffer(((239-y)<<8)+x) = 0
       }
     }
+
 
     if (nes.showDisplay) {
       nes.ui.writeFrame(buffer, prevBuffer)
@@ -757,7 +763,9 @@ class PPU(nes: NES) {
 
   /** Start rendering sprites and background at given scanline */
   def renderFramePartially(startScan: Int, scanCount: Int): Unit = {
+
     if (f_spVisibility == 1) renderSpritesPartially(startScan, scanCount, true)
+
 
     if(f_bgVisibility == 1) {
       var si : Int = startScan<<8
@@ -770,6 +778,11 @@ class PPU(nes: NES) {
         }
       }
     }
+//    if(nes.cpu.instructionCounter > 8000000) {
+//      Dynamic.global.console.log(s"pixel: ${buffer((230<<8)+240)}")
+//    }
+
+
 
     if (f_spVisibility == 1) renderSpritesPartially(startScan, scanCount, false)
 
@@ -778,6 +791,7 @@ class PPU(nes: NES) {
 
   /** Renders the tile data for a given scanline */
   def renderBgScanline(pbgbuffer: Boolean, scan: Int): Unit = {
+
     var baseTile : Int = (if (regS == 0) 0 else 256)
     var destIndex : Int = (scan<<8) - regFH
 
@@ -824,7 +838,7 @@ class PPU(nes: NES) {
 
               if (t.opaque(cntFV)) {
                 while (sx < 8) {
-                  (if(pbgbuffer) bgbuffer else buffer)(destIndex) = imgPalette(tpix(tscanoffset + sx) + att)
+                  targetBuffer(destIndex) = imgPalette(tpix(tscanoffset + sx) + att)
                   pixrendered(destIndex) |= 256
                   destIndex += 1
                   sx += 1
@@ -833,7 +847,7 @@ class PPU(nes: NES) {
                 while (sx < 8) {
                   col = tpix(tscanoffset + sx)
                   if (col != 0) {
-                    (if(pbgbuffer) bgbuffer else buffer)(destIndex) = imgPalette(col + att)
+                    targetBuffer(destIndex) = imgPalette(col + att)
                     pixrendered(destIndex) |= 256
                   }
                   destIndex += 1
@@ -851,15 +865,16 @@ class PPU(nes: NES) {
             cntH %= 2
             curNt = ntable1((cntV << 1) + cntH)
           }
-          if(nes.cpu.debug) Dynamic.global.console.log(s"BG scanline correctly rendered")
-        } else {
-          if(nes.cpu.debug) Dynamic.global.console.log(s"BG scanline skipped")
         }
 
-        // Tile data for one row should now have been fetched, so the data in the array is valid.
-        validTileData = true
+
       }
+
+      //if (nes.cpu.instructionCounter > 98420 && nes.cpu.instructionCounter < 98470) Dynamic.global.console.log(s"pixel: ${bgbuffer((130<<8)+120)} ")
+      // Tile data for one row should now have been fetched, so the data in the array is valid.
+      validTileData = true
     }
+
 
     // update vertical scroll:
     cntFV += 1
@@ -920,8 +935,8 @@ class PPU(nes: NES) {
           }
         }
       }
+      //if(nes.cpu.instructionCounter > 8000000) Dynamic.global.console.log(s"pixr is ${pixrendered((230<<8)+240)}")
     }
-    if(nes.cpu.debug) Dynamic.global.console.log(s"Sprites Render")
   }
 
   /** Checks sprite 0 hit for given scanline. Hit depends on sprite size. */

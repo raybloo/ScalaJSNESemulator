@@ -53,7 +53,7 @@ class UI(nes: NES) {
     screen.width = 256
     screen.height = 240
 
-    romSelect.value = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/color_test.nes"
+    romSelect.value = "https://raw.githubusercontent.com/raybloo/ScalaJSNESemulator/master/tetr.nes"
     romSelect.size = 300
 
     startCallBack = {

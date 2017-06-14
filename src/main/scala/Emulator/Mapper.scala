@@ -188,16 +188,11 @@ abstract class Mapper(nes: NES) {
         }
       case 4 =>
         // Sound+Joypad registers
-        Dynamic.global.console.log("Joypad or Sound registers were read !!!!!")
-        // /!\/!\/!\/!\/!\/!\
-        // Maybe this could create an error since
-        // joypad and papu aren't implemented
-
         (((addr & 0xffff) - 0x4015): @switch) match {
           case 0 =>
-          // 0x4015:
-          // Sound channel enable, DMC Status
-          //TODO: nes.papu.readReg(address)
+            // 0x4015:
+            // Sound channel enable, DMC Status
+            //TODO: nes.papu.readReg(address)
             0
           case 1 =>
             // 0x4016:
@@ -431,7 +426,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
   var regBufferCounter: Int = 0
 
   // Register 0:
-  var mirroring: Int = 0
+  var mirroring: Int = -1
   var oneScreenMirroring: Int = 0
   var prgSwitchingArea: Int = 1
   var prgSwitchingSize: Int = 1
@@ -505,11 +500,11 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
   }
 
   def setReg(reg: Int,value: Int): Unit = {
-
+    if(nes.cpu.debug) Dynamic.global.console.log(s"Register $reg was set with $value current mirroring is $mirroring")
     (reg: @switch) match {
       case 0 =>
         // Mirroring:
-        val tmp: Int = (value & 3)
+        var tmp: Int = (value & 3)
         if (tmp != mirroring) {
           // Set mirroring:
           mirroring = tmp
@@ -534,6 +529,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
 
         // VROM Switching Size:
         vromSwitchingSize = ((value >> 4) & 1)
+        Dynamic.global.console.log(s"Nametable's content is : ${nes.ppu.ntable1(0)}, ${nes.ppu.ntable1(1)}, ${nes.ppu.ntable1(2)}, ${nes.ppu.ntable1(3)}")
 
       case 1 =>
         // ROM selection:
@@ -624,6 +620,7 @@ class MMC1(nes: NES) extends Mapper(nes) { // mapper number 1
           }
         }
     }
+
   }
 
   def getRegNumber(address: Int): Int = {

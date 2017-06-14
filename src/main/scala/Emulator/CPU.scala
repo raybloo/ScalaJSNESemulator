@@ -51,7 +51,7 @@ class CPU(nes: NES) {
    */
 
   //Debug utilities
-  final val debug = true
+  final val debug = false
   var instructionCounter = 0
   final val logSize = 60
   var log: Array[(Int,Int,Int,Int)] = new Array(logSize) //Instruction, Addressing Mode, Address, PC
@@ -123,7 +123,6 @@ class CPU(nes: NES) {
     // Interrupt notification:
     irqRequested = false
     irqType = 3
-    showMem()
   }
 
   /** Get all the flags into one single Byte */
@@ -314,14 +313,11 @@ class CPU(nes: NES) {
       case OpData.INDIRECT => //Indirect Absolute mode, Find the 16-bit address contained at the given location
         addr = load2Words(opaddr+2)
 
-        Dynamic.global.console.log(s"Indirect Address Mode Intermediate Address: $addr")
-
         if(addr < 0x1FFF) {
           addr = unsign(memory(addr)) + (unsign(memory((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff))) << 8) //Read from address given in op
         } else {
           addr = unsign(nes.mmap.load(addr)) + (unsign(nes.mmap.load((addr & 0xff00) | (((addr & 0xff) + 1) & 0xff))) << 8) //When addr exceeds 0x1fff then it is mapped memory
         }
-        Dynamic.global.console.log(s"Indirect Address Mode Final Address: $addr")
       case _ =>
         nes.stop
         Dynamic.global.console.log(s"ERROR: Invalid Address Mode $addrMode")
@@ -631,8 +627,8 @@ class CPU(nes: NES) {
 
     instructionCounter += 1
     if(debug) {
-      Dynamic.global.console.log(s"$instructionCounter: PC $pc")
-      if (instructionCounter > 17390 && instructionCounter < 17800) {
+      if (instructionCounter > 100000000 && instructionCounter < 98470) {
+        Dynamic.global.console.log(s"$instructionCounter: PC $pc")
         Dynamic.global.console.log(s"Instruction $opinf with mode $addrMode")
         //Dynamic.global.console.log(s"Addressing Mode $addrMode")
         Dynamic.global.console.log(s"Address $addr")
@@ -642,7 +638,7 @@ class CPU(nes: NES) {
         //Dynamic.global.console.log(s"PC $pc")
         //fakeCounter-=1
       }
-      nes.stop
+      if(instructionCounter > 8000000) nes.stop
     }
 
     storeLog(opinf,addrMode,addr,pc)
@@ -680,7 +676,7 @@ class CPU(nes: NES) {
 
   /** Request interrupt */
   def requestIrq(irType: Int): Unit = {
-    Dynamic.global.console.log(s"IRQ of type $irType requested")
+    //Dynamic.global.console.log(s"IRQ of type $irType requested")
     if(!(irqRequested && irType == 0)) { //normal interrupt type
       irqRequested = true
       irqType = irType
@@ -714,8 +710,7 @@ class CPU(nes: NES) {
       push(status)
       pc_new = nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8)
       pc_new -= 1
-      Dynamic.global.console.log(s"NM IRQ VECTOR IS: ${nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8)}")
-      if(debug) showMem()
+      //Dynamic.global.console.log(s"NM IRQ VECTOR IS: ${nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8)}")
     }
   }
 

@@ -17,7 +17,7 @@ class NES() {
   // Init. accessible components
   var cpu: CPU = new CPU(this)
   var rom: ROM = new ROM(this)
-  var keyboard: Keyboard = new Keyboard //I'll see later how to implement this one
+  var keyboard: Keyboard = new Keyboard
   var mmap: Mapper = null
   var ppu: PPU = new PPU(this)
   var papu: PAPU = new PAPU
@@ -98,7 +98,7 @@ class NES() {
         if (ppu.requestEndFrame) {
           ppu.nmiCounter -= 1
           if (ppu.nmiCounter == 0) {
-            Dynamic.global.console.log("End frame requested")
+            //Dynamic.global.console.log("End frame requested")
             ppu.requestEndFrame = false
             ppu.startVBlank
             stop = true
@@ -115,7 +115,7 @@ class NES() {
         }
       }
     }
-    Dynamic.global.console.log("Frame Completed")
+    Dynamic.global.console.log(s"Frame Completed: ${cpu.instructionCounter}")
     frameCount += 1
   }
 
@@ -160,6 +160,11 @@ class NES() {
             oldRomUrl = romUrl
             ui.updateStatus("Successfully loaded. Ready to be started.")
             //true
+            Dynamic.global.console.log(s"PrgRom Size is : ${rom.getPrgRomSize}")
+            Dynamic.global.console.log(s"ChrRom Size is : ${rom.getChrRomSize}")
+            Dynamic.global.console.log(s"Mapper name is : ${rom.getMapperName}")
+            Dynamic.global.console.log(s"Mirroring type is : ${rom.getMirroringType}")
+            Dynamic.global.console.log(s"Nametable's content is : ${ppu.ntable1(0)}, ${ppu.ntable1(1)}, ${ppu.ntable1(2)}, ${ppu.ntable1(3)}")
           }
         }
         else {
